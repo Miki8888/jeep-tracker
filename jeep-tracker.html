@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0A0F1E" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F4F6FB" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jeep Tracker">
+<title>Jeep Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #F4F6FB;
+  --bg2: #EAECF4;
+  --card: #FFFFFF;
+  --card2: #F0F2FA;
+  --border: rgba(0,0,0,0.08);
+  --text: #0D1117;
+  --text2: #5A6478;
+  --text3: #8A93A8;
+  --amber: #F59E0B;
+  --amber-dim: rgba(245,158,11,0.12);
+  --green: #10B981;
+  --green-dim: rgba(16,185,129,0.12);
+  --blue: #3B82F6;
+  --blue-dim: rgba(59,130,246,0.12);
+  --red: #EF4444;
+  --red-dim: rgba(239,68,68,0.12);
+  --shadow: 0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --nav-h: 72px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #07090F;
+    --bg2: #0D1117;
+    --card: #111827;
+    --card2: #1A2234;
+    --border: rgba(255,255,255,0.07);
+    --text: #F0F4FF;
+    --text2: #8A93A8;
+    --text3: #4A5568;
+    --shadow: 0 2px 16px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.6);
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ── LAYOUT ── */
+#app { display: flex; flex-direction: column; height: 100%; }
+#main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 8px);
+}
+.section { display: none; padding: 16px; max-width: 680px; margin: 0 auto; }
+.section.active { display: block; }
+
+/* ── TOP BAR ── */
+#topbar {
+  background: var(--bg);
+  padding: 52px 20px 8px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10;
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+#topbar h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+#topbar span { font-size: 11px; color: var(--text2); font-family: 'JetBrains Mono'; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
+
+/* ── BOTTOM NAV ── */
+#nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: calc(var(--nav-h) + var(--safe-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: flex-start; padding-top: 8px;
+  z-index: 100;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: none; border: none; cursor: pointer; color: var(--text3);
+  font-family: 'Syne'; font-size: 10px; font-weight: 600;
+  padding: 4px 0; transition: color 0.2s;
+}
+.nav-btn.active { color: var(--amber); }
+.nav-btn svg { width: 22px; height: 22px; transition: transform 0.2s; }
+.nav-btn.active svg { transform: scale(1.1); }
+.nav-dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--amber); margin-top: -2px;
+  opacity: 0; transition: opacity 0.2s;
+}
+.nav-btn.active .nav-dot { opacity: 1; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--card); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 12px;
+  box-shadow: var(--shadow); border: 1px solid var(--border);
+}
+.card-sm { padding: 12px; border-radius: var(--radius-sm); }
+
+/* ── STAT CARDS GRID ── */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.stat-card {
+  background: var(--card); border-radius: var(--radius);
+  padding: 14px 16px; border: 1px solid var(--border);
+  box-shadow: var(--shadow); position: relative; overflow: hidden;
+}
+.stat-card::after {
+  content: ''; position: absolute; top: -20px; right: -20px;
+  width: 80px; height: 80px; border-radius: 50%;
+  background: currentColor; opacity: 0.05;
+}
+.stat-card .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text2); font-weight: 600; margin-bottom: 4px; }
+.stat-card .value { font-family: 'JetBrains Mono'; font-size: 22px; font-weight: 700; line-height: 1; }
+.stat-card .unit { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.stat-amber { color: var(--amber); border-top: 3px solid var(--amber); }
+.stat-green { color: var(--green); border-top: 3px solid var(--green); }
+.stat-blue { color: var(--blue); border-top: 3px solid var(--blue); }
+.stat-red { color: var(--red); border-top: 3px solid var(--red); }
+
+/* ── FUEL LIST ── */
+.fuel-item {
+  background: var(--card); border-radius: var(--radius);
+  border: 1px solid var(--border); margin-bottom: 8px;
+  overflow: hidden; transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: var(--shadow);
+}
+.fuel-item:active { transform: scale(0.98); }
+.fuel-header {
+  display: flex; align-items: center; padding: 12px 16px;
+  gap: 12px; cursor: pointer;
+}
+.fuel-km {
+  font-family: 'JetBrains Mono'; font-size: 18px; font-weight: 700;
+  color: var(--amber); min-width: 56px;
+}
+.fuel-meta { flex: 1; }
+.fuel-meta .date { font-size: 12px; color: var(--text2); }
+.fuel-meta .station { font-size: 13px; font-weight: 600; color: var(--text); }
+.fuel-cost {
+  text-align: right;
+  font-family: 'JetBrains Mono'; font-size: 16px; font-weight: 700;
+}
+.fuel-cost .cost { color: var(--text); }
+.fuel-cost .cons { font-size: 11px; color: var(--text2); }
+.fuel-details {
+  display: none; padding: 0 16px 12px;
+  border-top: 1px solid var(--border);
+}
+.fuel-details.open { display: block; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+.detail-item .dl { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; }
+.detail-item .dv { font-family: 'JetBrains Mono'; font-size: 13px; font-weight: 600; }
+.hybrid-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin: 10px 0 4px; gap: 2px; }
+.hybrid-bar .gas { background: var(--amber); }
+.hybrid-bar .elec { background: var(--green); }
+.hybrid-label { display: flex; justify-content: space-between; font-size: 10px; }
+.hybrid-label .g { color: var(--amber); font-family: 'JetBrains Mono'; }
+.hybrid-label .e { color: var(--green); font-family: 'JetBrains Mono'; }
+.btn-del {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 10px; padding: 6px 12px; border-radius: 8px;
+  border: 1px solid var(--red-dim); background: var(--red-dim);
+  color: var(--red); font-size: 12px; font-family: 'Syne'; cursor: pointer;
+}
+
+/* ── MAINTENANCE LIST ── */
+.maint-item {
+  background: var(--card); border-radius: var(--radius);
+  border: 1px solid var(--border); margin-bottom: 8px;
+  padding: 14px 16px; box-shadow: var(--shadow);
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.maint-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+  background: var(--amber-dim);
+}
+.maint-body { flex: 1; }
+.maint-title { font-weight: 700; font-size: 14px; }
+.maint-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.maint-cost { font-family: 'JetBrains Mono'; font-size: 15px; font-weight: 700; color: var(--amber); text-align: right; }
+.maint-next { font-size: 10px; color: var(--text2); text-align: right; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.badge-ok { background: var(--green-dim); color: var(--green); }
+.badge-warn { background: var(--amber-dim); color: var(--amber); }
+.badge-due { background: var(--red-dim); color: var(--red); }
+
+/* ── FAB ── */
+.fab {
+  position: fixed; bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  right: 16px; width: 56px; height: 56px; border-radius: 28px;
+  background: var(--amber); color: #000; border: none;
+  font-size: 26px; cursor: pointer; box-shadow: 0 4px 20px rgba(245,158,11,0.4);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s; z-index: 50;
+}
+.fab:active { transform: scale(0.92); box-shadow: 0 2px 10px rgba(245,158,11,0.3); }
+.fab.hidden { display: none; }
+
+/* ── MODAL ── */
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px); z-index: 200; display: none;
+  align-items: flex-end; justify-content: center;
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: var(--bg);
+  border-radius: 24px 24px 0 0;
+  width: 100%; max-width: 680px;
+  max-height: 92vh; overflow-y: auto;
+  padding: 0 0 calc(24px + var(--safe-bottom));
+  animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle {
+  width: 40px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 12px auto 4px;
+}
+.modal-title { font-size: 18px; font-weight: 800; padding: 8px 20px 16px; }
+.form-group { padding: 6px 20px; }
+.form-group label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); font-weight: 600; margin-bottom: 6px; }
+.form-group input, .form-group select {
+  width: 100%; padding: 12px 14px;
+  background: var(--card2); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: 'JetBrains Mono'; font-size: 15px;
+  -webkit-appearance: none; appearance: none;
+  transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus {
+  outline: none; border-color: var(--amber);
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+.form-actions { display: flex; gap: 10px; padding: 16px 20px 0; }
+.btn-primary {
+  flex: 1; padding: 14px; border-radius: var(--radius-sm);
+  background: var(--amber); color: #000;
+  font-family: 'Syne'; font-weight: 700; font-size: 15px;
+  border: none; cursor: pointer; transition: opacity 0.2s;
+}
+.btn-primary:active { opacity: 0.8; }
+.btn-cancel {
+  padding: 14px 20px; border-radius: var(--radius-sm);
+  background: var(--card2); color: var(--text2);
+  font-family: 'Syne'; font-weight: 600; font-size: 15px;
+  border: 1px solid var(--border); cursor: pointer;
+}
+
+/* ── CHART SECTION ── */
+.chart-card {
+  background: var(--card); border-radius: var(--radius);
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  padding: 16px; margin-bottom: 12px;
+}
+.chart-title { font-size: 13px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.chart-wrap { position: relative; height: 200px; }
+
+/* ── SETTINGS ── */
+.setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0; border-bottom: 1px solid var(--border);
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-weight: 600; font-size: 14px; }
+.setting-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.btn-action {
+  padding: 10px 18px; border-radius: var(--radius-sm);
+  font-family: 'Syne'; font-weight: 600; font-size: 13px;
+  cursor: pointer; border: 1.5px solid var(--border);
+  background: var(--card2); color: var(--text);
+  transition: all 0.2s;
+}
+.btn-action.amber { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+.btn-action.green { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.btn-action.red { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+
+/* ── EMPTY STATE ── */
+.empty {
+  text-align: center; padding: 48px 20px; color: var(--text2);
+}
+.empty .icon { font-size: 48px; margin-bottom: 12px; }
+.empty h3 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.empty p { font-size: 13px; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: calc(var(--nav-h) + var(--safe-bottom) + 80px);
+  left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--card); color: var(--text); padding: 12px 20px;
+  border-radius: 100px; box-shadow: var(--shadow-lg);
+  font-size: 13px; font-weight: 600; border: 1px solid var(--border);
+  opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 300;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── SCROLLBAR ── */
+#main::-webkit-scrollbar { width: 0; }
+
+/* ── DASHBOARD HERO ── */
+.hero {
+  background: linear-gradient(135deg, var(--amber) 0%, #D97706 100%);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 12px;
+  color: #000; position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; top: -30px; right: -30px;
+  width: 160px; height: 160px; border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+}
+.hero::after {
+  content: ''; position: absolute; bottom: -50px; right: 40px;
+  width: 120px; height: 120px; border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+}
+.hero .hero-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.7; font-weight: 600; }
+.hero .hero-km { font-family: 'JetBrains Mono'; font-size: 42px; font-weight: 700; line-height: 1; margin: 4px 0; }
+.hero .hero-sub { font-size: 13px; opacity: 0.75; }
+.hero .hero-badges { display: flex; gap: 8px; margin-top: 14px; }
+.hero-badge {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(0,0,0,0.15); border-radius: 20px;
+  padding: 4px 10px; font-size: 12px; font-weight: 600;
+}
+
+/* ── SECTION HEADER ── */
+.sec-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; padding-top: 4px;
+}
+.sec-header h2 { font-size: 18px; font-weight: 800; }
+.sec-count {
+  background: var(--amber-dim); color: var(--amber);
+  font-size: 11px; font-weight: 700; padding: 3px 9px;
+  border-radius: 20px; font-family: 'JetBrains Mono';
+}
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto;
+  scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 4px;
+}
+.filter-bar::-webkit-scrollbar { display: none; }
+.filter-chip {
+  flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  background: var(--card2); color: var(--text2);
+  border: 1px solid var(--border); transition: all 0.2s;
+  font-family: 'Syne';
+}
+.filter-chip.active { background: var(--amber-dim); color: var(--amber); border-color: var(--amber); }
+
+/* ── PRICE ACCORDION ── */
+.acc-year {
+  border-top: 1px solid var(--border);
+}
+.acc-year-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; cursor: pointer; transition: background 0.15s;
+  user-select: none;
+}
+.acc-year-header:active { background: var(--card2); }
+.acc-year-left { display: flex; align-items: center; gap: 12px; }
+.acc-year-label { font-family: 'JetBrains Mono'; font-size: 18px; font-weight: 700; }
+.acc-year-avg {
+  font-family: 'JetBrains Mono'; font-size: 13px;
+  background: var(--amber-dim); color: var(--amber);
+  padding: 3px 9px; border-radius: 20px; font-weight: 600;
+}
+.acc-year-meta { font-size: 11px; color: var(--text2); }
+.acc-chevron { color: var(--text3); transition: transform 0.25s; font-size: 14px; }
+.acc-chevron.open { transform: rotate(180deg); }
+.acc-months {
+  display: none; padding: 0 16px 12px;
+}
+.acc-months.open { display: block; }
+.acc-month-row {
+  display: flex; align-items: center; padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.acc-month-row:last-child { border-bottom: none; }
+.acc-month-name { width: 48px; font-size: 12px; color: var(--text2); font-weight: 600; text-transform: uppercase; }
+.acc-month-bar-wrap { flex: 1; margin: 0 10px; position: relative; }
+.acc-month-bar-bg { height: 6px; background: var(--card2); border-radius: 3px; overflow: hidden; }
+.acc-month-bar-fill { height: 100%; background: var(--amber); border-radius: 3px; transition: width 0.4s ease; }
+.acc-month-val { font-family: 'JetBrains Mono'; font-size: 12px; font-weight: 600; min-width: 40px; text-align: right; }
+.acc-month-cnt { font-size: 10px; color: var(--text3); min-width: 24px; text-align: right; font-family: 'JetBrains Mono'; }
+
+/* ── MONTH GROUPS (fuel list) ── */
+.month-group { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); }
+.month-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; background: var(--card2);
+  cursor: pointer; user-select: none; transition: background 0.15s;
+}
+.month-header:active { background: var(--border); }
+.month-header-left { display: flex; align-items: center; gap: 10px; }
+.month-name { font-weight: 800; font-size: 14px; }
+.month-badge {
+  font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono';
+  background: var(--amber-dim); color: var(--amber);
+  padding: 2px 8px; border-radius: 20px;
+}
+.month-header-right { display: flex; align-items: center; gap: 8px; }
+.month-cost { font-family: 'JetBrains Mono'; font-size: 13px; font-weight: 700; color: var(--text); }
+.month-litros { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text2); }
+.month-chev { color: var(--text3); font-size: 11px; transition: transform 0.25s; }
+.month-chev.open { transform: rotate(180deg); }
+.month-body { display: none; background: var(--card); }
+.month-body.open { display: block; }
+.month-body .fuel-item { border-radius: 0; box-shadow: none; border: none; border-bottom: 1px solid var(--border); margin-bottom: 0; }
+.month-body .fuel-item:last-child { border-bottom: none; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fuel-item, .maint-item, .card, .stat-card, .chart-card {
+  animation: fadeIn 0.25s ease both;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div>
+      <div><span id="topbar-sub">VEHÍCULO HÍBRIDO</span></div>
+      <h1 id="topbar-title">🚙 Inicio</h1>
+    </div>
+    <div style="text-align:right">
+      <div style="font-family:'JetBrains Mono';font-size:11px;color:var(--text2)" id="topbar-date"></div>
+    </div>
+  </div>
+  <div id="main">
+
+    <!-- ── INICIO ── -->
+    <div id="sec-home" class="section active">
+      <div class="hero">
+        <div class="hero-label">Odómetro actual</div>
+        <div class="hero-km mono" id="hero-km">— km</div>
+        <div class="hero-sub" id="hero-sub">Cargando datos…</div>
+        <div class="hero-badges">
+          <div class="hero-badge">⛽ <span id="hero-total-fuel">—</span></div>
+          <div class="hero-badge">💰 <span id="hero-total-cost">—</span></div>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card stat-amber">
+          <div class="label">Consumo medio</div>
+          <div class="value mono" id="s-consumo">—</div>
+          <div class="unit">L/100km</div>
+        </div>
+        <div class="stat-card stat-green">
+          <div class="label">KM eléctrico</div>
+          <div class="value mono" id="s-elec">—</div>
+          <div class="unit">% del total</div>
+        </div>
+        <div class="stat-card stat-blue">
+          <div class="label">Coste / KM</div>
+          <div class="value mono" id="s-coste-km">—</div>
+          <div class="unit">€/km</div>
+        </div>
+        <div class="stat-card stat-red">
+          <div class="label">Precio medio</div>
+          <div class="value mono" id="s-precio">—</div>
+          <div class="unit">€/litro</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:10px;font-weight:700">Últimos repostajes</div>
+        <div id="home-recent"></div>
+      </div>
+      <div class="card" id="home-maint-card">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:10px;font-weight:700">Próximos mantenimientos</div>
+        <div id="home-maint"></div>
+      </div>
+    </div>
+
+    <!-- ── REPOSTAJE ── -->
+    <div id="sec-fuel" class="section">
+      <div class="sec-header">
+        <h2>Repostajes</h2>
+        <div class="sec-count" id="fuel-count">0</div>
+      </div>
+      <div class="filter-bar" id="fuel-filters">
+        <div class="filter-chip active" data-year="all">Todos</div>
+      </div>
+      <div id="fuel-list"></div>
+    </div>
+
+    <!-- ── MANTENIMIENTO ── -->
+    <div id="sec-maint" class="section">
+      <div class="sec-header">
+        <h2>Mantenimiento</h2>
+        <div class="sec-count" id="maint-count">0</div>
+      </div>
+      <div id="maint-list"></div>
+    </div>
+
+    <!-- ── ESTADÍSTICAS ── -->
+    <div id="sec-stats" class="section">
+      <div class="sec-header"><h2>Estadísticas</h2></div>
+
+      <!-- Precio por año / mes ACORDEÓN -->
+      <div class="chart-card" style="padding:0;overflow:hidden">
+        <div style="padding:16px 16px 12px;display:flex;align-items:center;justify-content:space-between">
+          <div class="chart-title" style="margin:0">💶 Precio combustible por año</div>
+          <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono'">toca para desglosar</span>
+        </div>
+        <div id="price-accordion"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">⛽ Consumo mensual (L/100km)</div>
+        <div class="chart-wrap"><canvas id="chart-consumo"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">🔋 KM Gasolina vs Eléctrico</div>
+        <div class="chart-wrap"><canvas id="chart-hybrid"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">💸 Coste mensual (€)</div>
+        <div class="chart-wrap"><canvas id="chart-coste"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">🏪 Gasolineras más usadas</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="chart-station"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ── AJUSTES ── -->
+    <div id="sec-settings" class="section">
+      <div class="sec-header"><h2>Ajustes</h2></div>
+      <div class="card">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Nombre del vehículo</div>
+            <div class="setting-sub">Identificación</div>
+          </div>
+          <input id="vehicle-name" type="text" placeholder="Mi Jeep" style="width:140px;padding:8px 10px;background:var(--card2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:'Syne';font-size:13px" oninput="saveVehicleName()">
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Importar Repostajes (CSV)</div>
+            <div class="setting-sub">Formato Jeep Tracker</div>
+          </div>
+          <label class="btn-action amber" style="cursor:pointer">
+            Importar
+            <input type="file" accept=".csv" style="display:none" onchange="importFuelCSV(this)">
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Importar Mantenimiento (CSV)</div>
+            <div class="setting-sub">Formato Jeep Tracker</div>
+          </div>
+          <label class="btn-action amber" style="cursor:pointer">
+            Importar
+            <input type="file" accept=".csv" style="display:none" onchange="importMaintCSV(this)">
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Exportar Repostajes</div>
+            <div class="setting-sub">Descarga CSV</div>
+          </div>
+          <button class="btn-action green" onclick="exportFuelCSV()">Exportar</button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Exportar Mantenimiento</div>
+            <div class="setting-sub">Descarga CSV</div>
+          </div>
+          <button class="btn-action green" onclick="exportMaintCSV()">Exportar</button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Exportar todo (JSON)</div>
+            <div class="setting-sub">Backup completo</div>
+          </div>
+          <button class="btn-action green" onclick="exportJSON()">Backup</button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Importar backup (JSON)</div>
+            <div class="setting-sub">Restaurar datos</div>
+          </div>
+          <label class="btn-action amber" style="cursor:pointer">
+            Restaurar
+            <input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
+          </label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Borrar todos los datos</div>
+            <div class="setting-sub">Acción irreversible</div>
+          </div>
+          <button class="btn-action red" onclick="clearAllData()">Borrar</button>
+        </div>
+      </div>
+      <div class="card" style="text-align:center;padding:20px">
+        <div style="font-size:28px;margin-bottom:8px">🚙⚡</div>
+        <div style="font-weight:800;font-size:16px">Jeep Tracker v1.2</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Control de vehículo híbrido</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px;font-family:'JetBrains Mono'" id="db-stats"></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- ── BOTTOM NAV ── -->
+  <nav id="nav">
+    <button class="nav-btn active" data-sec="home" onclick="showSection('home')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Inicio
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" data-sec="fuel" onclick="showSection('fuel')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6C4.9 3 4 3.9 4 5v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77zM18 10c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zM8 18v-4.5H6L10 7v4.5h2L8 18z"/></svg>
+      Repostaje
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" data-sec="maint" onclick="showSection('maint')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
+      Mantenim.
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" data-sec="stats" onclick="showSection('stats')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+      Estadíst.
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" data-sec="settings" onclick="showSection('settings')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      Ajustes
+      <div class="nav-dot"></div>
+    </button>
+  </nav>
+
+  <!-- FAB -->
+  <button class="fab" id="fab" onclick="openAddModal()">+</button>
+</div>
+
+<!-- ── MODAL REPOSTAJE ── -->
+<div class="modal-bg" id="modal-fuel">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-fuel-title">Nuevo repostaje</div>
+    <input type="hidden" id="edit-fuel-id">
+    <div class="form-row">
+      <div class="form-group"><label>KM odómetro</label><input type="number" id="f-km" placeholder="45000"></div>
+      <div class="form-group"><label>KM parciales</label><input type="number" id="f-km-p" placeholder="500"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>KM gasolina</label><input type="number" id="f-km-gas" placeholder="250"></div>
+      <div class="form-group"><label>KM eléctrico</label><input type="number" id="f-km-elec" placeholder="250"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Litros</label><input type="number" id="f-litros" step="0.01" placeholder="28.00" oninput="calcCost()"></div>
+      <div class="form-group"><label>Precio/L (€)</label><input type="number" id="f-precio" step="0.001" placeholder="1.45" oninput="calcCost()"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Coste total (€)</label><input type="number" id="f-coste" step="0.01" placeholder="40.60"></div>
+      <div class="form-group"><label>Descuento (€)</label><input type="number" id="f-descuento" step="0.01" placeholder="0.00"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Fecha</label><input type="date" id="f-fecha"></div>
+      <div class="form-group">
+        <label>Combustible</label>
+        <select id="f-combustible"><option>Gasolina</option><option>Gasolina Premium</option><option>Diésel</option><option>Diésel Premium</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Gasolinera</label><input type="text" id="f-station" placeholder="Redcaroil Langreo" list="stations-list"></div>
+    <datalist id="stations-list"></datalist>
+    <div class="form-group"><label>Consumo (L/100km)</label><input type="number" id="f-consumo" step="0.01" placeholder="4.50"></div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-fuel')">Cancelar</button>
+      <button class="btn-primary" onclick="saveFuel()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL MANTENIMIENTO ── -->
+<div class="modal-bg" id="modal-maint">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-maint-title">Nuevo mantenimiento</div>
+    <input type="hidden" id="edit-maint-id">
+    <div class="form-group"><label>Tipo de mantenimiento</label>
+      <select id="m-tipo">
+        <option>Cambio de aceite</option><option>Filtro de aire</option><option>Filtro de habitáculo</option>
+        <option>Frenos delanteros</option><option>Frenos traseros</option><option>Neumáticos</option>
+        <option>ITV</option><option>Revisión general</option><option>Batería 12V</option>
+        <option>Batería híbrida</option><option>Otro</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Descripción</label><input type="text" id="m-desc" placeholder="Detalles del mantenimiento"></div>
+    <div class="form-row">
+      <div class="form-group"><label>KM actual</label><input type="number" id="m-km" placeholder="45000"></div>
+      <div class="form-group"><label>Coste (€)</label><input type="number" id="m-coste" step="0.01" placeholder="89.00"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Fecha</label><input type="date" id="m-fecha"></div>
+      <div class="form-group"><label>Próximo KM</label><input type="number" id="m-next-km" placeholder="60000"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Próxima fecha</label><input type="date" id="m-next-date"></div>
+      <div class="form-group"><label>Taller</label><input type="text" id="m-taller" placeholder="Concesionario"></div>
+    </div>
+    <div class="form-group"><label>Icono</label>
+      <select id="m-icono">
+        <option value="🛢️">🛢️ Aceite</option><option value="🔧">🔧 Herramienta</option>
+        <option value="🛞">🛞 Neumático</option><option value="🚗">🚗 Revisión</option>
+        <option value="⚡">⚡ Eléctrico</option><option value="🛑">🛑 Frenos</option>
+        <option value="📋">📋 ITV</option><option value="🔋">🔋 Batería</option>
+        <option value="❄️">❄️ Aire acondicionado</option>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-maint')">Cancelar</button>
+      <button class="btn-primary" onclick="saveMaint()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// DATA LAYER
+// ─────────────────────────────────────────────
+const DB = {
+  fuel: () => JSON.parse(localStorage.getItem('jt_fuel') || '[]'),
+  maint: () => JSON.parse(localStorage.getItem('jt_maint') || '[]'),
+  saveFuel: d => localStorage.setItem('jt_fuel', JSON.stringify(d)),
+  saveMaint: d => localStorage.setItem('jt_maint', JSON.stringify(d)),
+  vehicleName: () => localStorage.getItem('jt_name') || 'Mi Jeep',
+  saveVehicleName: n => localStorage.setItem('jt_name', n)
+};
+
+function uid() {
+  return Math.random().toString(36).substr(2,8);
+}
+
+// ─────────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────────
+let currentSection = 'home';
+const titles = { home:'🚙 Inicio', fuel:'⛽ Repostaje', maint:'🔧 Mantenimiento', stats:'📊 Estadísticas', settings:'⚙️ Ajustes' };
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + (name==='settings'?'settings':name==='stats'?'stats':name==='maint'?'maint':name==='fuel'?'fuel':'home')).classList.add('active');
+  document.querySelector(`[data-sec="${name}"]`).classList.add('active');
+  document.getElementById('topbar-title').textContent = titles[name] || name;
+  document.getElementById('fab').classList.toggle('hidden', name === 'stats' || name === 'settings' || name === 'home');
+  currentSection = name;
+  if (name === 'stats') renderCharts();
+  if (name === 'home') renderHome();
+  document.getElementById('main').scrollTo(0,0);
+}
+
+// ─────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ─────────────────────────────────────────────
+// HOME
+// ─────────────────────────────────────────────
+function renderHome() {
+  const fuels = DB.fuel().sort((a,b) => b.km - a.km);
+  const maints = DB.maint().sort((a,b) => b.km - a.km);
+  const name = DB.vehicleName();
+  document.getElementById('topbar-sub').textContent = name.toUpperCase();
+
+  if (!fuels.length) {
+    document.getElementById('hero-km').textContent = '0 km';
+    document.getElementById('hero-sub').textContent = 'Sin datos. Importa tu CSV en Ajustes.';
+    document.getElementById('hero-total-fuel').textContent = '0 repostajes';
+    document.getElementById('hero-total-cost').textContent = '0 €';
+    document.getElementById('s-consumo').textContent = '—';
+    document.getElementById('s-elec').textContent = '—';
+    document.getElementById('s-coste-km').textContent = '—';
+    document.getElementById('s-precio').textContent = '—';
+    return;
+  }
+
+  const last = fuels[0];
+  document.getElementById('hero-km').textContent = fmt(last.km, 0) + ' km';
+  const firstKm = fuels[fuels.length-1].km;
+  const totalKm = last.km - firstKm;
+  document.getElementById('hero-sub').textContent = `${fmt(totalKm,0)} km registrados`;
+  const totalCost = fuels.reduce((s,f) => s + (f.coste||0), 0);
+  document.getElementById('hero-total-fuel').textContent = fuels.length + ' repostajes';
+  document.getElementById('hero-total-cost').textContent = fmt(totalCost,2) + ' €';
+
+  const validCons = fuels.filter(f => f.consumo > 0);
+  const avgCons = validCons.length ? validCons.reduce((s,f)=>s+f.consumo,0)/validCons.length : 0;
+  document.getElementById('s-consumo').textContent = avgCons ? fmt(avgCons,2) : '—';
+
+  const withElec = fuels.filter(f => f.kmElectrico > 0);
+  let pctElec = '—';
+  if (withElec.length) {
+    const totG = withElec.reduce((s,f)=>s+(f.kmGasolina||0),0);
+    const totE = withElec.reduce((s,f)=>s+(f.kmElectrico||0),0);
+    pctElec = fmt(totE/(totG+totE)*100, 1);
+  }
+  document.getElementById('s-elec').textContent = pctElec;
+
+  const avgPrice = fuels.reduce((s,f)=>s+(f.precioL||0),0)/fuels.length;
+  document.getElementById('s-precio').textContent = fmt(avgPrice,3);
+
+  const costeKm = totalKm > 0 ? totalCost/totalKm : 0;
+  document.getElementById('s-coste-km').textContent = costeKm ? fmt(costeKm,3) : '—';
+
+  // Recent fuel
+  const recent = fuels.slice(0, 4);
+  document.getElementById('home-recent').innerHTML = recent.map(f => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <span style="font-family:'JetBrains Mono';font-size:13px;color:var(--amber);font-weight:700">${fmt(f.km,0)} km</span>
+        <span style="font-size:12px;color:var(--text2);margin-left:8px">${fmtDate(f.fecha)}</span>
+      </div>
+      <div style="text-align:right">
+        <span style="font-family:'JetBrains Mono';font-size:13px;font-weight:700">${fmt(f.coste,2)} €</span>
+        ${f.consumo>0?`<span style="font-size:11px;color:var(--text2);margin-left:6px">${fmt(f.consumo,2)}L</span>`:''}
+      </div>
+    </div>`).join('');
+
+  // Upcoming maintenance
+  const curKm = last.km;
+  const upcoming = maints.filter(m => m.nextKm && m.nextKm > curKm)
+    .sort((a,b) => a.nextKm - b.nextKm).slice(0,3);
+  const maintEl = document.getElementById('home-maint');
+  if (!upcoming.length) {
+    maintEl.innerHTML = '<div style="color:var(--text2);font-size:13px;text-align:center;padding:16px">Sin mantenimientos próximos registrados</div>';
+  } else {
+    maintEl.innerHTML = upcoming.map(m => {
+      const diff = m.nextKm - curKm;
+      const cls = diff < 500 ? 'badge-due' : diff < 2000 ? 'badge-warn' : 'badge-ok';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:20px">${m.icono||'🔧'}</span>
+        <div style="flex:1"><div style="font-weight:600;font-size:13px">${m.tipo}</div><div style="font-size:11px;color:var(--text2)">${fmt(m.nextKm,0)} km</div></div>
+        <span class="badge ${cls}">${fmt(diff,0)} km</span>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ─────────────────────────────────────────────
+// FUEL LIST
+// ─────────────────────────────────────────────
+let fuelYearFilter = 'all';
+
+const MONTHS_ES_FULL = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function renderFuel() {
+  const fuels = DB.fuel().sort((a,b) => b.km - a.km);
+  document.getElementById('fuel-count').textContent = fuels.length;
+
+  // Build year filters
+  const years = [...new Set(fuels.map(f => f.fecha ? f.fecha.split('-')[0] : '?'))].sort((a,b)=>b-a);
+  const filterBar = document.getElementById('fuel-filters');
+  filterBar.innerHTML = `<div class="filter-chip ${fuelYearFilter==='all'?'active':''}" onclick="setFuelFilter('all')">Todos</div>` +
+    years.map(y => `<div class="filter-chip ${fuelYearFilter===y?'active':''}" onclick="setFuelFilter('${y}')">${y}</div>`).join('');
+
+  const filtered = fuelYearFilter === 'all' ? fuels : fuels.filter(f => f.fecha && f.fecha.startsWith(fuelYearFilter));
+
+  if (!filtered.length) {
+    document.getElementById('fuel-list').innerHTML = `<div class="empty"><div class="icon">⛽</div><h3>Sin repostajes</h3><p>Añade tu primer repostaje o importa un CSV desde Ajustes.</p></div>`;
+    return;
+  }
+
+  // Group by YYYY-MM
+  const byMonth = {};
+  filtered.forEach(f => {
+    const key = f.fecha ? f.fecha.substr(0,7) : '????-??';
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(f);
+  });
+  const monthKeys = Object.keys(byMonth).sort((a,b) => b.localeCompare(a)); // most recent first
+
+  // Determine which month to auto-open (most recent)
+  const autoOpen = monthKeys[0];
+
+  let html = '';
+  monthKeys.forEach(key => {
+    const [y, m] = key.split('-');
+    const monthName = MONTHS_ES_FULL[parseInt(m)] || key;
+    const items = byMonth[key];
+    const monthCost = items.reduce((s,f) => s+(f.coste||0), 0);
+    const monthLitros = items.reduce((s,f) => s+(f.litros||0), 0);
+    const isOpen = key === autoOpen;
+    const mid = `month-${key.replace('-','')}`;
+
+    html += `
+    <div class="month-group" style="margin-bottom:8px">
+      <div class="month-header" onclick="toggleMonth('${mid}')">
+        <div class="month-header-left">
+          <span class="month-name">${monthName} ${y}</span>
+          <span class="month-badge">${items.length} repost.</span>
+        </div>
+        <div class="month-header-right">
+          <span class="month-cost">${fmt(monthCost,2)} €</span>
+          <span class="month-litros">${fmt(monthLitros,2)} L</span>
+          <span class="month-chev ${isOpen?'open':''}" id="chev-${mid}">▼</span>
+        </div>
+      </div>
+      <div class="month-body ${isOpen?'open':''}" id="${mid}">`;
+
+    items.forEach(f => {
+      const hasHybrid = f.kmGasolina > 0 || f.kmElectrico > 0;
+      const totH = (f.kmGasolina||0) + (f.kmElectrico||0);
+      const pctG = totH > 0 ? (f.kmGasolina/totH*100) : 0;
+      const pctE = totH > 0 ? (f.kmElectrico/totH*100) : 0;
+      html += `
+      <div class="fuel-item" id="fi-${f.id}">
+        <div class="fuel-header" onclick="toggleFuel('${f.id}')">
+          <div class="fuel-km">${fmt(f.km,0)}</div>
+          <div class="fuel-meta">
+            <div class="date">${fmtDate(f.fecha)} · ${f.kmParciales ? fmt(f.kmParciales,0)+' km' : ''}</div>
+            <div class="station">${f.gasolinera || '—'}</div>
+          </div>
+          <div class="fuel-cost">
+            <div class="cost">${fmt(f.coste,2)} €</div>
+            <div class="cons">${f.consumo>0?fmt(f.consumo,2)+' L/100':'—'}</div>
+          </div>
+        </div>
+        <div class="fuel-details" id="fd-${f.id}">
+          ${hasHybrid ? `
+          <div class="hybrid-bar">
+            <div class="gas" style="flex:${pctG}"></div>
+            <div class="elec" style="flex:${pctE}"></div>
+          </div>
+          <div class="hybrid-label">
+            <span class="g">⛽ ${fmt(f.kmGasolina||0,0)} km gas</span>
+            <span class="e">⚡ ${fmt(f.kmElectrico||0,0)} km elec</span>
+          </div>` : ''}
+          <div class="detail-grid">
+            <div class="detail-item"><div class="dl">Litros</div><div class="dv">${fmt(f.litros,2)} L</div></div>
+            <div class="detail-item"><div class="dl">Precio/L</div><div class="dv">${fmt(f.precioL,3)} €</div></div>
+            <div class="detail-item"><div class="dl">Descuento</div><div class="dv">${fmt(f.descuento||0,2)} €</div></div>
+            <div class="detail-item"><div class="dl">KM parciales</div><div class="dv">${fmt(f.kmParciales||0,0)} km</div></div>
+            <div class="detail-item"><div class="dl">Combustible</div><div class="dv" style="font-size:11px">${f.combustible||'—'}</div></div>
+            <div class="detail-item"><div class="dl">Consumo</div><div class="dv">${f.consumo>0?fmt(f.consumo,2)+' L':'—'}</div></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn-del" onclick="editFuel('${f.id}')">✏️ Editar</button>
+            <button class="btn-del" onclick="deleteFuel('${f.id}')">🗑 Eliminar</button>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    html += `</div></div>`; // close month-body + month-group
+  });
+
+  document.getElementById('fuel-list').innerHTML = html;
+}
+
+function setFuelFilter(y) {
+  fuelYearFilter = y;
+  renderFuel();
+}
+
+function toggleFuel(id) {
+  const el = document.getElementById('fd-'+id);
+  el.classList.toggle('open');
+}
+
+function toggleMonth(mid) {
+  const body = document.getElementById(mid);
+  const chev = document.getElementById('chev-'+mid);
+  if (!body) return;
+  body.classList.toggle('open');
+  if (chev) chev.classList.toggle('open');
+}
+
+function deleteFuel(id) {
+  if (!confirm('¿Eliminar este repostaje?')) return;
+  const fuels = DB.fuel().filter(f => f.id !== id);
+  DB.saveFuel(fuels);
+  renderFuel(); renderHome();
+  toast('✅ Repostaje eliminado');
+}
+
+function editFuel(id) {
+  const f = DB.fuel().find(x => x.id === id);
+  if (!f) return;
+  document.getElementById('edit-fuel-id').value = f.id;
+  document.getElementById('modal-fuel-title').textContent = 'Editar repostaje';
+  document.getElementById('f-km').value = f.km||'';
+  document.getElementById('f-km-p').value = f.kmParciales||'';
+  document.getElementById('f-km-gas').value = f.kmGasolina||'';
+  document.getElementById('f-km-elec').value = f.kmElectrico||'';
+  document.getElementById('f-litros').value = f.litros||'';
+  document.getElementById('f-precio').value = f.precioL||'';
+  document.getElementById('f-coste').value = f.coste||'';
+  document.getElementById('f-descuento').value = f.descuento||'';
+  document.getElementById('f-fecha').value = f.fecha||'';
+  document.getElementById('f-combustible').value = f.combustible||'Gasolina';
+  document.getElementById('f-station').value = f.gasolinera||'';
+  document.getElementById('f-consumo').value = f.consumo||'';
+  document.getElementById('modal-fuel').classList.add('open');
+}
+
+// ─────────────────────────────────────────────
+// MAINTENANCE LIST
+// ─────────────────────────────────────────────
+function renderMaint() {
+  const maints = DB.maint().sort((a,b) => b.km - a.km);
+  document.getElementById('maint-count').textContent = maints.length;
+  if (!maints.length) {
+    document.getElementById('maint-list').innerHTML = `<div class="empty"><div class="icon">🔧</div><h3>Sin registros</h3><p>Añade tu primer mantenimiento o importa el CSV desde Ajustes.</p></div>`;
+    return;
+  }
+  const curKm = (DB.fuel().sort((a,b)=>b.km-a.km)[0]||{}).km||0;
+  document.getElementById('maint-list').innerHTML = maints.map(m => {
+    let badge = '';
+    if (m.nextKm) {
+      const diff = m.nextKm - curKm;
+      const cls = diff < 0 ? 'badge-due' : diff < 2000 ? 'badge-warn' : 'badge-ok';
+      const label = diff < 0 ? 'VENCIDO' : `${fmt(diff,0)} km`;
+      badge = `<span class="badge ${cls}">${label}</span>`;
+    }
+    return `
+    <div class="maint-item">
+      <div class="maint-icon">${m.icono||'🔧'}</div>
+      <div class="maint-body">
+        <div class="maint-title">${m.tipo}</div>
+        <div class="maint-sub">${m.desc||''} ${m.taller?'· '+m.taller:''}</div>
+        <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
+          <span style="font-size:11px;color:var(--text2);">${fmtDate(m.fecha)} · ${fmt(m.km,0)} km</span>
+          ${badge}
+        </div>
+        <div style="margin-top:6px;display:flex;gap:8px">
+          <button class="btn-del" onclick="editMaint('${m.id}')">✏️ Editar</button>
+          <button class="btn-del" onclick="deleteMaint('${m.id}')">🗑 Eliminar</button>
+        </div>
+      </div>
+      <div>
+        <div class="maint-cost">${m.coste?fmt(m.coste,2)+' €':'—'}</div>
+        <div class="maint-next">${m.nextKm?fmt(m.nextKm,0)+' km':''}</div>
+        <div class="maint-next">${m.nextDate?fmtDate(m.nextDate):''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteMaint(id) {
+  if (!confirm('¿Eliminar este registro?')) return;
+  DB.saveMaint(DB.maint().filter(m => m.id !== id));
+  renderMaint(); renderHome();
+  toast('✅ Registro eliminado');
+}
+
+function editMaint(id) {
+  const m = DB.maint().find(x => x.id === id);
+  if (!m) return;
+  document.getElementById('edit-maint-id').value = m.id;
+  document.getElementById('modal-maint-title').textContent = 'Editar mantenimiento';
+  document.getElementById('m-tipo').value = m.tipo||'Cambio de aceite';
+  document.getElementById('m-desc').value = m.desc||'';
+  document.getElementById('m-km').value = m.km||'';
+  document.getElementById('m-coste').value = m.coste||'';
+  document.getElementById('m-fecha').value = m.fecha||'';
+  document.getElementById('m-next-km').value = m.nextKm||'';
+  document.getElementById('m-next-date').value = m.nextDate||'';
+  document.getElementById('m-taller').value = m.taller||'';
+  document.getElementById('m-icono').value = m.icono||'🔧';
+  document.getElementById('modal-maint').classList.add('open');
+}
+
+// ─────────────────────────────────────────────
+// MODAL / FORM
+// ─────────────────────────────────────────────
+function openAddModal() {
+  if (currentSection === 'fuel') {
+    document.getElementById('edit-fuel-id').value = '';
+    document.getElementById('modal-fuel-title').textContent = 'Nuevo repostaje';
+    document.getElementById('f-km').value=''; document.getElementById('f-km-p').value='';
+    document.getElementById('f-km-gas').value=''; document.getElementById('f-km-elec').value='';
+    document.getElementById('f-litros').value=''; document.getElementById('f-precio').value='';
+    document.getElementById('f-coste').value=''; document.getElementById('f-descuento').value='';
+    document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('f-station').value=''; document.getElementById('f-consumo').value='';
+    // Suggest last km
+    const fuels = DB.fuel().sort((a,b)=>b.km-a.km);
+    if (fuels.length) {
+      document.getElementById('f-km-p').placeholder = 'Último: '+fuels[0].km;
+    }
+    // Update stations datalist
+    const stations = [...new Set(DB.fuel().map(f=>f.gasolinera).filter(Boolean))];
+    document.getElementById('stations-list').innerHTML = stations.map(s=>`<option value="${s}">`).join('');
+    document.getElementById('modal-fuel').classList.add('open');
+  } else if (currentSection === 'maint') {
+    document.getElementById('edit-maint-id').value = '';
+    document.getElementById('modal-maint-title').textContent = 'Nuevo mantenimiento';
+    document.getElementById('m-desc').value=''; document.getElementById('m-km').value='';
+    document.getElementById('m-coste').value=''; document.getElementById('m-fecha').value=new Date().toISOString().split('T')[0];
+    document.getElementById('m-next-km').value=''; document.getElementById('m-next-date').value='';
+    document.getElementById('m-taller').value='';
+    const fuels = DB.fuel().sort((a,b)=>b.km-a.km);
+    if (fuels.length) document.getElementById('m-km').value = fuels[0].km;
+    document.getElementById('modal-maint').classList.add('open');
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function calcCost() {
+  const l = parseFloat(document.getElementById('f-litros').value)||0;
+  const p = parseFloat(document.getElementById('f-precio').value)||0;
+  if (l && p) document.getElementById('f-coste').value = (l*p).toFixed(2);
+}
+
+function saveFuel() {
+  const id = document.getElementById('edit-fuel-id').value || uid();
+  const km = parseFloat(document.getElementById('f-km').value)||0;
+  const kmP = parseFloat(document.getElementById('f-km-p').value)||0;
+  const litros = parseFloat(document.getElementById('f-litros').value)||0;
+  const precioL = parseFloat(document.getElementById('f-precio').value)||0;
+  const coste = parseFloat(document.getElementById('f-coste').value)||0;
+
+  if (!km || !litros) { toast('⚠️ KM y litros son obligatorios'); return; }
+
+  const record = {
+    id, km, kmParciales: kmP,
+    kmGasolina: parseFloat(document.getElementById('f-km-gas').value)||0,
+    kmElectrico: parseFloat(document.getElementById('f-km-elec').value)||0,
+    litros, precioL, coste,
+    descuento: parseFloat(document.getElementById('f-descuento').value)||0,
+    fecha: document.getElementById('f-fecha').value,
+    combustible: document.getElementById('f-combustible').value,
+    gasolinera: document.getElementById('f-station').value.trim(),
+    consumo: parseFloat(document.getElementById('f-consumo').value)||0
+  };
+
+  const fuels = DB.fuel().filter(f => f.id !== id);
+  fuels.push(record);
+  DB.saveFuel(fuels);
+  closeModal('modal-fuel');
+  renderFuel(); renderHome();
+  toast('✅ Repostaje guardado');
+}
+
+function saveMaint() {
+  const id = document.getElementById('edit-maint-id').value || uid();
+  const km = parseFloat(document.getElementById('m-km').value)||0;
+  if (!km) { toast('⚠️ KM es obligatorio'); return; }
+  const record = {
+    id, km,
+    tipo: document.getElementById('m-tipo').value,
+    desc: document.getElementById('m-desc').value.trim(),
+    coste: parseFloat(document.getElementById('m-coste').value)||0,
+    fecha: document.getElementById('m-fecha').value,
+    nextKm: parseFloat(document.getElementById('m-next-km').value)||0,
+    nextDate: document.getElementById('m-next-date').value,
+    taller: document.getElementById('m-taller').value.trim(),
+    icono: document.getElementById('m-icono').value
+  };
+  const maints = DB.maint().filter(m => m.id !== id);
+  maints.push(record);
+  DB.saveMaint(maints);
+  closeModal('modal-maint');
+  renderMaint(); renderHome();
+  toast('✅ Mantenimiento guardado');
+}
+
+// ─────────────────────────────────────────────
+// CHARTS
+// ─────────────────────────────────────────────
+let charts = {};
+
+function destroyCharts() {
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  charts = {};
+}
+
+function renderPriceAccordion() {
+  const fuels = DB.fuel().filter(f => f.fecha && f.precioL > 0);
+  if (!fuels.length) {
+    document.getElementById('price-accordion').innerHTML = '<div style="padding:16px;color:var(--text2);font-size:13px;text-align:center">Sin datos de precio</div>';
+    return;
+  }
+
+  // Group by year → month
+  const byYear = {};
+  fuels.forEach(f => {
+    const [y, m] = f.fecha.split('-');
+    if (!byYear[y]) byYear[y] = {};
+    if (!byYear[y][m]) byYear[y][m] = [];
+    byYear[y][m].push(f.precioL);
+  });
+
+  const years = Object.keys(byYear).sort((a,b) => b - a); // most recent first
+  const MONTHS_ES = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+  // Find global max price for bar scaling
+  let globalMax = 0;
+  years.forEach(y => Object.values(byYear[y]).forEach(arr => {
+    const avg = arr.reduce((a,b)=>a+b)/arr.length;
+    if (avg > globalMax) globalMax = avg;
+  }));
+
+  const html = years.map(y => {
+    const allPrices = Object.values(byYear[y]).flat();
+    const yearAvg = allPrices.reduce((a,b)=>a+b) / allPrices.length;
+    const yearMin = Math.min(...allPrices);
+    const yearMax = Math.max(...allPrices);
+    const totalFills = allPrices.length;
+
+    const monthsHtml = Object.keys(byYear[y]).sort().map(m => {
+      const prices = byYear[y][m];
+      const avg = prices.reduce((a,b)=>a+b) / prices.length;
+      const pct = Math.round((avg / globalMax) * 100);
+      // Color: green if below year avg, red if above
+      const barColor = avg <= yearAvg ? 'var(--green)' : avg > yearAvg * 1.05 ? 'var(--red)' : 'var(--amber)';
+      return `
+      <div class="acc-month-row">
+        <div class="acc-month-name">${MONTHS_ES[parseInt(m)]}</div>
+        <div class="acc-month-bar-wrap">
+          <div class="acc-month-bar-bg">
+            <div class="acc-month-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+          </div>
+        </div>
+        <div class="acc-month-val" style="color:${barColor}">${fmt(avg,3)}</div>
+        <div class="acc-month-cnt">${prices.length}x</div>
+      </div>`;
+    }).join('');
+
+    return `
+    <div class="acc-year">
+      <div class="acc-year-header" onclick="toggleAccYear('acc-${y}')">
+        <div class="acc-year-left">
+          <span class="acc-year-label">${y}</span>
+          <span class="acc-year-avg">${fmt(yearAvg,3)} €/L</span>
+        </div>
+        <div style="text-align:right;display:flex;align-items:center;gap:10px">
+          <div>
+            <div class="acc-year-meta">↓${fmt(yearMin,3)} ↑${fmt(yearMax,3)}</div>
+            <div class="acc-year-meta">${totalFills} repostajes</div>
+          </div>
+          <div class="acc-chevron" id="chev-acc-${y}">▼</div>
+        </div>
+      </div>
+      <div class="acc-months" id="acc-${y}">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono';display:flex;gap:16px">
+          <span style="color:var(--green)">▬ por debajo media</span>
+          <span style="color:var(--red)">▬ por encima</span>
+        </div>
+        ${monthsHtml}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('price-accordion').innerHTML = html;
+  // Auto-open current year
+  const curYear = new Date().getFullYear().toString();
+  if (byYear[curYear]) toggleAccYear('acc-' + curYear);
+}
+
+function toggleAccYear(id) {
+  const el = document.getElementById(id);
+  const chev = document.getElementById('chev-' + id);
+  if (!el) return;
+  el.classList.toggle('open');
+  if (chev) chev.classList.toggle('open');
+}
+function renderCharts() {
+  destroyCharts();
+  renderPriceAccordion();
+  const fuels = DB.fuel().sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+  if (!fuels.length) return;
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+  const textColor = isDark ? '#6B7280' : '#9CA3AF';
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 8 } },
+      y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'JetBrains Mono', size: 10 } } }
+    }
+  };
+
+  // Group by month
+  const byMonth = {};
+  fuels.forEach(f => {
+    if (!f.fecha) return;
+    const m = f.fecha.substr(0,7);
+    if (!byMonth[m]) byMonth[m] = { consumos: [], precios: [], costes: [], kmGas: 0, kmElec: 0 };
+    if (f.consumo > 0) byMonth[m].consumos.push(f.consumo);
+    if (f.precioL > 0) byMonth[m].precios.push(f.precioL);
+    byMonth[m].costes.push(f.coste||0);
+    byMonth[m].kmGas += f.kmGasolina||0;
+    byMonth[m].kmElec += f.kmElectrico||0;
+  });
+
+  const months = Object.keys(byMonth).sort();
+  const monthLabels = months.map(m => { const [y,mo] = m.split('-'); return `${mo}/${y.substr(2)}`; });
+
+  // Chart 1: Consumo
+  charts.consumo = new Chart(document.getElementById('chart-consumo'), {
+    type: 'line',
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        data: months.map(m => byMonth[m].consumos.length ? (byMonth[m].consumos.reduce((a,b)=>a+b)/byMonth[m].consumos.length).toFixed(2) : null),
+        borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.1)',
+        borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#F59E0B',
+        fill: true, tension: 0.3, spanGaps: true
+      }]
+    },
+    options: { ...baseOpts }
+  });
+
+  // Chart 3: Hybrid bar
+  const hybridMonths = months.filter(m => byMonth[m].kmGas > 0 || byMonth[m].kmElec > 0);
+  const hybridLabels = hybridMonths.map(m => { const [y,mo] = m.split('-'); return `${mo}/${y.substr(2)}`; });
+  charts.hybrid = new Chart(document.getElementById('chart-hybrid'), {
+    type: 'bar',
+    data: {
+      labels: hybridLabels,
+      datasets: [
+        { label: 'Gasolina', data: hybridMonths.map(m => byMonth[m].kmGas), backgroundColor: 'rgba(245,158,11,0.8)', borderRadius: 4 },
+        { label: 'Eléctrico', data: hybridMonths.map(m => byMonth[m].kmElec), backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 4 }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      plugins: { legend: { display: true, labels: { color: textColor, font: { family: 'Syne', size: 11 } } } },
+      scales: { ...baseOpts.scales, x: { ...baseOpts.scales.x, stacked: false }, y: { ...baseOpts.scales.y, stacked: false } }
+    }
+  });
+
+  // Chart 4: Coste mensual
+  charts.coste = new Chart(document.getElementById('chart-coste'), {
+    type: 'bar',
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        data: months.map(m => byMonth[m].costes.reduce((a,b)=>a+b,0).toFixed(2)),
+        backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 6
+      }]
+    },
+    options: { ...baseOpts }
+  });
+
+  // Chart 5: Gasolineras
+  const stationCount = {};
+  fuels.forEach(f => { if (f.gasolinera) { stationCount[f.gasolinera] = (stationCount[f.gasolinera]||0)+1; } });
+  const topStations = Object.entries(stationCount).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const stColors = ['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#EC4899','#14B8A6','#F97316'];
+  charts.station = new Chart(document.getElementById('chart-station'), {
+    type: 'doughnut',
+    data: {
+      labels: topStations.map(s=>s[0]),
+      datasets: [{ data: topStations.map(s=>s[1]), backgroundColor: stColors, borderWidth: 0, hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'right', labels: { color: textColor, font: { family: 'Syne', size: 11 }, padding: 10 } } }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────
+// IMPORT / EXPORT
+// ─────────────────────────────────────────────
+function importFuelCSV(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const text = e.target.result;
+      const lines = text.trim().split('\n');
+      const header = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
+      const parsed = [];
+      for (let i=1; i<lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        if (cols.length < 2) continue;
+        const get = (key) => { const idx = header.findIndex(h=>h.toLowerCase()===key.toLowerCase()); return idx>=0?cols[idx]?.replace(/"/g,'').replace(',','.').trim():''; };
+        const km = parseFloat(get('KM'))||0;
+        if (!km) continue;
+        // Parse date d/m/yyyy or yyyy-mm-dd
+        let fecha = get('FECHA');
+        fecha = parseDate(fecha);
+        parsed.push({
+          id: get('ID Reabastecimiento') || get('id reabastecimiento') || uid(),
+          km, kmParciales: parseFloat(get('KM parciales'))||0,
+          kmGasolina: parseFloat(get('KM Gasolina'))||0,
+          kmElectrico: parseFloat(get('KM Electrico'))||0,
+          combustible: get('COMBUSTIBLE')||'Gasolina',
+          precioL: parseFloat(get('PRECIO/L'))||0,
+          litros: parseFloat(get('Litros'))||0,
+          coste: parseFloat(get('COSTE TOTAL'))||0,
+          fecha, gasolinera: get('GASOLINERA'),
+          consumo: parseFloat(get('CONSUMO'))||0,
+          descuento: parseFloat(get('DESCUENTO'))||0
+        });
+      }
+      const existing = DB.fuel();
+      const existingIds = new Set(existing.map(f=>f.id));
+      const newRecs = parsed.filter(p => !existingIds.has(p.id));
+      DB.saveFuel([...existing, ...newRecs]);
+      renderFuel(); renderHome();
+      toast(`✅ ${newRecs.length} repostajes importados (${parsed.length-newRecs.length} ya existían)`);
+    } catch(err) { toast('❌ Error al importar: ' + err.message); }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function importMaintCSV(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const text = e.target.result;
+      const lines = text.trim().split('\n');
+      const header = lines[0].split(',').map(h => h.trim().replace(/"/g,'').toLowerCase());
+      const parsed = [];
+      for (let i=1; i<lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        if (cols.length < 2) continue;
+        const get = key => {
+          const idx = header.findIndex(h => h === key.toLowerCase() || h.includes(key.toLowerCase()));
+          return idx >= 0 ? cols[idx]?.replace(/"/g,'').trim() : '';
+        };
+
+        // Parse price: "$265,92" or "265.92" or "265,92"
+        let precioRaw = get('precio');
+        precioRaw = precioRaw.replace('$','').replace(/\./g,'').replace(',','.').trim();
+        const coste = parseFloat(precioRaw) || 0;
+
+        // Parse date: M/DD/YYYY or D/M/YYYY or YYYY-MM-DD
+        let fechaRaw = get('fecha');
+        let fecha = parseDateFlex(fechaRaw);
+
+        // Extract KM from Observaciones if available
+        const obs = get('observaciones') || get('obs') || '';
+        const kmMatch = obs.match(/[Kk][Mm]\s*(\d{4,6})/);
+        const kmNum = kmMatch ? parseInt(kmMatch[1]) : 0;
+
+        // Assign icon by type
+        const tipo = get('tipo') || 'Mantenimiento';
+        const iconMap = {
+          'revision': '🚗', 'neumatico': '🛞', 'aceite': '🛢️',
+          'averia': '⚠️', 'freno': '🛑', 'bateria': '🔋',
+          'itv': '📋', 'filtro': '🔧'
+        };
+        let icono = '🔧';
+        for (const [k,v] of Object.entries(iconMap)) {
+          if (tipo.toLowerCase().includes(k)) { icono = v; break; }
+        }
+
+        parsed.push({
+          id: get('id mantenimientos') || get('id') || uid(),
+          km: kmNum,
+          tipo,
+          desc: obs,
+          coste,
+          fecha,
+          nextKm: 0,
+          nextDate: '',
+          taller: '',
+          icono
+        });
+      }
+      const existing = DB.maint();
+      const existingIds = new Set(existing.map(m => m.id));
+      const newRecs = parsed.filter(p => !existingIds.has(p.id));
+      DB.saveMaint([...existing, ...newRecs]);
+      renderMaint(); renderHome();
+      toast(`✅ ${newRecs.length} registros de mantenimiento importados`);
+    } catch(err) { toast('❌ Error: ' + err.message); console.error(err); }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function parseDateFlex(d) {
+  if (!d) return '';
+  d = d.trim();
+  // YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  // M/DD/YYYY or MM/DD/YYYY (US format from the CSV)
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) {
+    const parts = d.split('/');
+    // Detect if US (month first) or EU (day first)
+    // If month > 12 it's EU, otherwise assume US as per the file
+    const a = parseInt(parts[0]), b = parseInt(parts[1]), y = parts[2];
+    if (a > 12) { // EU: DD/MM/YYYY
+      return `${y}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+    } else { // US: MM/DD/YYYY
+      return `${y}-${parts[0].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
+    }
+  }
+  return d;
+}
+
+function exportFuelCSV() {
+  const fuels = DB.fuel().sort((a,b) => a.km - b.km);
+  const header = 'ID Reabastecimiento,KM,KM parciales,KM Gasolina,KM Electrico,COMBUSTIBLE,PRECIO/L,Litros,COSTE TOTAL,FECHA,GASOLINERA,CONSUMO,DESCUENTO';
+  const rows = fuels.map(f => [
+    f.id, f.km, f.kmParciales||0, f.kmGasolina||0, f.kmElectrico||0,
+    f.combustible, fmtCSV(f.precioL,2), fmtCSV(f.litros,2), fmtCSV(f.coste,2),
+    fmtDateExport(f.fecha), f.gasolinera||'', fmtCSV(f.consumo,2), fmtCSV(f.descuento||0,2)
+  ].map(v=>`"${v}"`).join(','));
+  downloadCSV([header, ...rows].join('\n'), 'repostajes.csv');
+  toast('✅ CSV exportado');
+}
+
+function exportMaintCSV() {
+  const maints = DB.maint().sort((a,b) => a.km - b.km);
+  const header = 'id,km,tipo,desc,coste,fecha,nextKm,nextDate,taller,icono';
+  const rows = maints.map(m => [m.id,m.km,m.tipo,m.desc||'',m.coste||0,m.fecha||'',m.nextKm||0,m.nextDate||'',m.taller||'',m.icono||''].map(v=>`"${v}"`).join(','));
+  downloadCSV([header,...rows].join('\n'), 'mantenimiento.csv');
+  toast('✅ CSV exportado');
+}
+
+function exportJSON() {
+  const data = { fuel: DB.fuel(), maint: DB.maint(), vehicleName: DB.vehicleName(), exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'jeep-tracker-backup.json'; a.click();
+  toast('✅ Backup exportado');
+}
+
+function importJSON(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.fuel) DB.saveFuel(data.fuel);
+      if (data.maint) DB.saveMaint(data.maint);
+      if (data.vehicleName) { DB.saveVehicleName(data.vehicleName); document.getElementById('vehicle-name').value = data.vehicleName; }
+      renderFuel(); renderMaint(); renderHome();
+      toast('✅ Backup restaurado');
+    } catch(err) { toast('❌ JSON inválido'); }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (!confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.')) return;
+  if (!confirm('¿Estás seguro? Se perderán todos los repostajes y mantenimientos.')) return;
+  localStorage.removeItem('jt_fuel'); localStorage.removeItem('jt_maint');
+  renderFuel(); renderMaint(); renderHome();
+  toast('🗑 Datos borrados');
+}
+
+function saveVehicleName() {
+  DB.saveVehicleName(document.getElementById('vehicle-name').value);
+  renderHome();
+}
+
+// ─────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────
+function fmt(n, dec) {
+  if (n == null || isNaN(n)) return '—';
+  return Number(n).toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
+function fmtCSV(n, dec) {
+  if (!n) return '0,00';
+  return Number(n).toFixed(dec).replace('.', ',');
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  if (d.includes('-')) {
+    const [y,m,day] = d.split('-');
+    return `${day}/${m}/${y}`;
+  }
+  return d;
+}
+
+function fmtDateExport(d) {
+  if (!d) return '';
+  if (d.includes('-')) {
+    const [y,m,day] = d.split('-');
+    return `${parseInt(day)}/${parseInt(m)}/${y}`;
+  }
+  return d;
+}
+
+function parseDate(d) {
+  if (!d) return '';
+  d = d.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) {
+    const [day,m,y] = d.split('/');
+    return `${y}-${m.padStart(2,'0')}-${day.padStart(2,'0')}`;
+  }
+  return d;
+}
+
+function parseCSVLine(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for (let i=0; i<line.length; i++) {
+    if (line[i]==='"') { inQ=!inQ; }
+    else if (line[i]===',' && !inQ) { result.push(cur); cur=''; }
+    else cur += line[i];
+  }
+  result.push(cur);
+  return result;
+}
+
+function downloadCSV(content, filename) {
+  const blob = new Blob(['\uFEFF'+content], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = filename; a.click();
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+function init() {
+  // Date in topbar
+  document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' }).toUpperCase();
+
+  // Vehicle name
+  const vn = DB.vehicleName();
+  document.getElementById('vehicle-name').value = vn;
+  document.getElementById('topbar-sub').textContent = vn.toUpperCase();
+
+  // DB stats
+  document.getElementById('db-stats').textContent = `${DB.fuel().length} repostajes · ${DB.maint().length} mantenimientos`;
+
+  renderHome();
+  renderFuel();
+  renderMaint();
+
+  // Close modals on bg click
+  document.querySelectorAll('.modal-bg').forEach(bg => {
+    bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('open'); });
+  });
+
+  // PWA manifest
+  const manifest = {
+    name: 'Jeep Tracker',
+    short_name: 'JeepTracker',
+    description: 'Control de repostaje y mantenimiento de vehículo híbrido',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#07090F',
+    theme_color: '#F59E0B',
+    icons: [{ src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23F59E0B'/%3E%3Ctext y='.9em' font-size='80' x='10'%3E🚙%3C/text%3E%3C/svg%3E", sizes: '192x192', type: 'image/svg+xml' }]
+  };
+  const mblob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  const mlink = document.createElement('link');
+  mlink.rel = 'manifest'; mlink.href = URL.createObjectURL(mblob);
+  document.head.appendChild(mlink);
+
+  // Service Worker via blob
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+      const CACHE='jt-v1';
+      self.addEventListener('install',e=>self.skipWaiting());
+      self.addEventListener('activate',e=>e.waitUntil(clients.claim()));
+      self.addEventListener('fetch',e=>{
+        if(e.request.method!=='GET')return;
+        e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
+      });
+    `;
+    const swBlob = new Blob([swCode], { type: 'application/javascript' });
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

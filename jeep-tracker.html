@@ -630,7 +630,7 @@ body {
       </div>
       <div class="card" style="text-align:center;padding:20px">
         <div style="font-size:28px;margin-bottom:8px">🚙⚡</div>
-        <div style="font-weight:800;font-size:16px">Jeep Tracker v1.3</div>
+        <div style="font-weight:800;font-size:16px">Jeep Tracker v1.4</div>
         <div style="font-size:12px;color:var(--text2);margin-top:4px">Control de vehículo híbrido</div>
         <div style="font-size:11px;color:var(--text3);margin-top:8px;font-family:'JetBrains Mono'" id="db-stats"></div>
       </div>
@@ -1698,17 +1698,57 @@ function init() {
 
   // Service Worker via blob
   if ('serviceWorker' in navigator) {
+    const APP_VERSION = '1.4';
     const swCode = `
-      const CACHE='jt-v1';
-      self.addEventListener('install',e=>self.skipWaiting());
-      self.addEventListener('activate',e=>e.waitUntil(clients.claim()));
-      self.addEventListener('fetch',e=>{
-        if(e.request.method!=='GET')return;
-        e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
+      const CACHE = 'jt-v${APP_VERSION}';
+      const URLS_TO_CACHE = [self.location.href];
+
+      self.addEventListener('install', e => {
+        e.waitUntil(
+          caches.open(CACHE).then(cache => cache.addAll(URLS_TO_CACHE))
+        );
+        self.skipWaiting();
+      });
+
+      self.addEventListener('activate', e => {
+        e.waitUntil(
+          caches.keys().then(keys =>
+            Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+          ).then(() => clients.claim())
+        );
+      });
+
+      self.addEventListener('fetch', e => {
+        if (e.request.method !== 'GET') return;
+        e.respondWith(
+          fetch(e.request).then(res => {
+            const copy = res.clone();
+            caches.open(CACHE).then(cache => cache.put(e.request, copy));
+            return res;
+          }).catch(() => caches.match(e.request))
+        );
       });
     `;
     const swBlob = new Blob([swCode], { type: 'application/javascript' });
-    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+    const swURL = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swURL).then(reg => {
+      // Check for updates every time the app loads
+      reg.update();
+      // Notify user when new version is ready
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'activated') {
+            const t = document.getElementById('toast');
+            if (t) {
+              t.textContent = '🔄 App actualizada a v' + APP_VERSION;
+              t.classList.add('show');
+              setTimeout(() => t.classList.remove('show'), 3500);
+            }
+          }
+        });
+      });
+    }).catch(() => {});
   }
 }
 

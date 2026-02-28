@@ -636,24 +636,22 @@ body {
       <div class="card" style="margin-bottom:12px">
         <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);font-weight:700;margin-bottom:12px">☁️ Google Drive</div>
         <div style="background:var(--blue-dim);border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--text2);line-height:1.6">
-          Necesitas un <strong style="color:var(--text)">Client ID de Google</strong>. 
-          Toca el botón de ayuda para ver cómo obtenerlo gratis (5 min).
-          <button onclick="showDriveHelp()" style="display:block;margin-top:8px;background:var(--blue-dim);border:1px solid var(--blue);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:11px;font-family:'Syne';font-weight:700;cursor:pointer">📖 Ver instrucciones</button>
-        </div>
-        <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:8px">
-          <div class="setting-label">Google Client ID</div>
-          <input id="drive-client-id" type="text" placeholder="xxxxxxxx.apps.googleusercontent.com"
-            style="width:100%;padding:10px 12px;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'JetBrains Mono';font-size:11px"
-            oninput="saveDriveClientId()" value="">
+          Descarga el backup y lo sube automáticamente a Drive en un solo toque. <strong style="color:var(--text)">Sin configuración.</strong>
         </div>
         <div class="setting-row">
           <div>
-            <div class="setting-label">Subir backup a Drive</div>
-            <div class="setting-sub" id="drive-status">No conectado</div>
+            <div class="setting-label">Guardar en Google Drive</div>
+            <div class="setting-sub" id="drive-status">Descarga + abre Drive</div>
           </div>
-          <button class="btn-action" id="btn-drive" onclick="uploadToDrive()" style="background:var(--card2);border-color:var(--border)">
-            <span>☁️ Subir</span>
+          <button class="btn-action green" id="btn-drive" onclick="uploadToDrive()">
+            ☁️ Subir
           </button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Último backup en Drive</div>
+            <div class="setting-sub" id="drive-last">Nunca</div>
+          </div>
         </div>
       </div>
 
@@ -727,7 +725,7 @@ body {
 
       <div class="card" style="text-align:center;padding:20px">
         <div style="font-size:28px;margin-bottom:8px">🚙⚡</div>
-        <div style="font-weight:800;font-size:16px">Jeep Tracker v1.9</div>
+        <div style="font-weight:800;font-size:16px">Jeep Tracker v2.0</div>
         <div style="font-size:12px;color:var(--text2);margin-top:4px">Control de vehículo híbrido</div>
         <div style="font-size:11px;color:var(--text3);margin-top:8px;font-family:'JetBrains Mono'" id="db-stats"></div>
       </div>
@@ -1975,177 +1973,50 @@ function updateLastBackupLabel() {
 }
 
 // ─────────────────────────────────────────────
-// GOOGLE DRIVE
+// GOOGLE DRIVE — SIMPLE
 // ─────────────────────────────────────────────
-let driveAccessToken = null;
+function uploadToDrive() {
+  // Step 1: download the backup file
+  const data = {
+    fuel: DB.fuel(), maint: DB.maint(),
+    vehicleName: DB.vehicleName(),
+    exportedAt: new Date().toISOString(),
+    version: '2.0'
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'jeep-tracker-backup.json';
+  a.click();
 
-function saveDriveClientId() {
-  const val = document.getElementById('drive-client-id').value.trim();
-  localStorage.setItem('jt_drive_client_id', val);
+  // Save last upload date
+  const now = new Date();
+  localStorage.setItem('jt_drive_last_upload', now.toISOString());
+  const el = document.getElementById('drive-last');
+  if (el) el.textContent = now.toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+  // Step 2: open Drive upload after short delay
+  setTimeout(() => {
+    toast('📂 Abriendo Google Drive…');
+    window.open('https://drive.google.com/drive/my-drive', '_blank');
+  }, 1200);
+
+  toast('⬇️ Descargando backup…');
 }
 
 function initDriveSettings() {
-  const clientId = localStorage.getItem('jt_drive_client_id') || '';
-  const el = document.getElementById('drive-client-id');
-  if (el) el.value = clientId;
-  updateDriveStatus();
-}
-
-function updateDriveStatus() {
-  const status = document.getElementById('drive-status');
-  const clientId = localStorage.getItem('jt_drive_client_id') || '';
-  if (!status) return;
-  if (!clientId) {
-    status.textContent = '⚠️ Configura tu Client ID primero';
-  } else if (driveAccessToken) {
-    status.textContent = '✅ Conectado a Google Drive';
-  } else {
-    status.textContent = 'Client ID guardado · pulsa Subir para conectar';
+  const last = localStorage.getItem('jt_drive_last_upload');
+  const el = document.getElementById('drive-last');
+  if (el && last) {
+    const d = new Date(last);
+    el.textContent = d.toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
   }
 }
 
-function showDriveHelp() {
-  document.getElementById('modal-drive-help').classList.add('open');
-}
-
-async function uploadToDrive() {
-  const clientId = localStorage.getItem('jt_drive_client_id') || '';
-  if (!clientId) {
-    toast('⚠️ Primero añade tu Google Client ID');
-    return;
-  }
-
-  try {
-    // Step 1: Get OAuth token
-    if (!driveAccessToken) {
-      driveAccessToken = await getDriveToken(clientId);
-    }
-    if (!driveAccessToken) return;
-
-    toast('☁️ Subiendo a Google Drive…');
-
-    // Step 2: Find or create "Jeep Tracker" folder
-    let folderId = null;
-    const folderSearch = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=name='Jeep Tracker' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`,
-      { headers: { Authorization: `Bearer ${driveAccessToken}` } }
-    );
-    const folderData = await folderSearch.json();
-    if (folderData.files && folderData.files.length > 0) {
-      folderId = folderData.files[0].id;
-    } else {
-      // Create folder
-      const folderRes = await fetch('https://www.googleapis.com/drive/v3/files', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${driveAccessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Jeep Tracker', mimeType: 'application/vnd.google-apps.folder' })
-      });
-      const folderJson = await folderRes.json();
-      folderId = folderJson.id;
-    }
-
-    // Step 3: Build backup content
-    const data = {
-      fuel: DB.fuel(), maint: DB.maint(),
-      vehicleName: DB.vehicleName(),
-      exportedAt: new Date().toISOString(),
-      version: '1.8'
-    };
-    const content = JSON.stringify(data, null, 2);
-    const filename = `jeep-tracker-backup.json`;
-
-    // Step 4: Check if backup file already exists in folder
-    const searchRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=name='${filename}' and '${folderId}' in parents and trashed=false&fields=files(id,name)`,
-      { headers: { Authorization: `Bearer ${driveAccessToken}` } }
-    );
-    const searchData = await searchRes.json();
-    const existingFile = searchData.files && searchData.files[0];
-
-    let uploadRes;
-    if (existingFile) {
-      // Update existing file content only
-      uploadRes = await fetch(
-        `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`,
-        {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${driveAccessToken}`, 'Content-Type': 'application/json' },
-          body: content
-        }
-      );
-    } else {
-      // Create new file inside Jeep Tracker folder
-      const metadata = { name: filename, mimeType: 'application/json', parents: [folderId] };
-      const form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-      form.append('file', new Blob([content], { type: 'application/json' }));
-      uploadRes = await fetch(
-        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
-        { method: 'POST', headers: { Authorization: `Bearer ${driveAccessToken}` }, body: form }
-      );
-    }
-
-    if (uploadRes.ok) {
-      localStorage.setItem('jt_drive_last_upload', new Date().toISOString());
-      updateDriveStatus();
-      toast('✅ Backup subido a Google Drive');
-    } else {
-      const err = await uploadRes.json();
-      if (uploadRes.status === 401) {
-        driveAccessToken = null;
-        toast('🔄 Sesión expirada, vuelve a intentarlo');
-      } else {
-        toast('❌ Error Drive: ' + (err.error?.message || 'desconocido'));
-      }
-    }
-  } catch (e) {
-    toast('❌ Error: ' + e.message);
-    driveAccessToken = null;
-  }
-}
-
-function getDriveToken(clientId) {
-  return new Promise((resolve) => {
-    const scope = 'https://www.googleapis.com/auth/drive';
-    const redirectUri = window.location.href.split('?')[0].split('#')[0];
-
-    // Check hash for token (after OAuth redirect)
-    const hash = window.location.hash;
-    if (hash.includes('access_token')) {
-      const params = new URLSearchParams(hash.substring(1));
-      const token = params.get('access_token');
-      window.location.hash = '';
-      resolve(token);
-      return;
-    }
-
-    // Redirect to Google OAuth
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${encodeURIComponent(clientId)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&response_type=token` +
-      `&scope=${encodeURIComponent(scope)}` +
-      `&prompt=consent`;
-
-    // Save state so we know to upload after redirect
-    localStorage.setItem('jt_drive_pending', 'true');
-    window.location.href = authUrl;
-    resolve(null);
-  });
-}
-
-function checkDriveRedirect() {
-  const hash = window.location.hash;
-  if (hash.includes('access_token') && localStorage.getItem('jt_drive_pending')) {
-    const params = new URLSearchParams(hash.substring(1));
-    driveAccessToken = params.get('access_token');
-    window.location.hash = '';
-    localStorage.removeItem('jt_drive_pending');
-    updateDriveStatus();
-    // Auto upload after auth
-    setTimeout(() => uploadToDrive(), 500);
-  }
-}
+function saveDriveClientId() {}
+function checkDriveRedirect() {}
+function showDriveHelp() {}
+function updateDriveStatus() {}
 function init() {
   // Check Drive OAuth redirect first
   checkDriveRedirect();
@@ -2191,7 +2062,7 @@ function init() {
   document.head.appendChild(mlink);
 
   // ── AUTO-UPDATE: compara versión guardada y fuerza recarga si hay nueva ──
-  const APP_VERSION = '1.9';
+  const APP_VERSION = '2.0';
   const savedVersion = localStorage.getItem('jt_version');
   if (savedVersion && savedVersion !== APP_VERSION) {
     localStorage.setItem('jt_version', APP_VERSION);

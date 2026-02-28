@@ -443,6 +443,42 @@ body {
 .month-body .fuel-item { border-radius: 0; box-shadow: none; border: none; border-bottom: 1px solid var(--border); margin-bottom: 0; }
 .month-body .fuel-item:last-child { border-bottom: none; }
 
+/* ── TOGGLE SWITCH ── */
+.toggle-wrap { cursor: pointer; }
+.toggle-track {
+  width: 44px; height: 26px; border-radius: 13px;
+  background: var(--card2); border: 1.5px solid var(--border);
+  position: relative; transition: background 0.25s, border-color 0.25s;
+}
+.toggle-track.on { background: var(--green); border-color: var(--green); }
+.toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--text3); transition: transform 0.25s, background 0.25s;
+}
+.toggle-track.on .toggle-thumb { transform: translateX(18px); background: #fff; }
+
+/* ── DRIVE HELP MODAL ── */
+#modal-drive-help .modal { padding-bottom: calc(32px + var(--safe-bottom)); }
+.help-step {
+  display: flex; gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.help-step:last-child { border-bottom: none; }
+.help-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--amber-dim); color: var(--amber);
+  font-weight: 800; font-size: 13px; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.help-text { font-size: 13px; line-height: 1.6; color: var(--text2); }
+.help-text strong { color: var(--text); }
+.help-link {
+  display: inline-block; margin-top: 6px;
+  color: var(--blue); font-size: 12px; font-family: 'JetBrains Mono';
+  text-decoration: none; word-break: break-all;
+}
+
 /* ── ANIMATIONS ── */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .fuel-item, .maint-item, .card, .stat-card, .chart-card {
@@ -570,14 +606,60 @@ body {
     <!-- ── AJUSTES ── -->
     <div id="sec-settings" class="section">
       <div class="sec-header"><h2>Ajustes</h2></div>
-      <div class="card">
+
+      <!-- BACKUP AUTOMÁTICO -->
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);font-weight:700;margin-bottom:12px">🔄 Backup automático</div>
         <div class="setting-row">
           <div>
-            <div class="setting-label">Nombre del vehículo</div>
-            <div class="setting-sub">Identificación</div>
+            <div class="setting-label">Backup mensual automático</div>
+            <div class="setting-sub" id="last-backup-label">Descarga JSON al abrir la app</div>
           </div>
-          <input id="vehicle-name" type="text" placeholder="Mi Jeep" style="width:140px;padding:8px 10px;background:var(--card2);border:1.6px solid var(--border);border-radius:8px;color:var(--text);font-family:'Syne';font-size:13px" oninput="saveVehicleName()">
+          <label style="display:flex;align-items:center;cursor:pointer;gap:8px">
+            <div class="toggle-wrap" onclick="toggleAutoBackup()">
+              <div class="toggle-track" id="toggle-autobackup">
+                <div class="toggle-thumb"></div>
+              </div>
+            </div>
+          </label>
         </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Hacer backup ahora</div>
+            <div class="setting-sub">Descarga JSON completo</div>
+          </div>
+          <button class="btn-action green" onclick="exportJSON()">Backup</button>
+        </div>
+      </div>
+
+      <!-- GOOGLE DRIVE -->
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);font-weight:700;margin-bottom:12px">☁️ Google Drive</div>
+        <div style="background:var(--blue-dim);border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--text2);line-height:1.6">
+          Necesitas un <strong style="color:var(--text)">Client ID de Google</strong>. 
+          Toca el botón de ayuda para ver cómo obtenerlo gratis (5 min).
+          <button onclick="showDriveHelp()" style="display:block;margin-top:8px;background:var(--blue-dim);border:1px solid var(--blue);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:11px;font-family:'Syne';font-weight:700;cursor:pointer">📖 Ver instrucciones</button>
+        </div>
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+          <div class="setting-label">Google Client ID</div>
+          <input id="drive-client-id" type="text" placeholder="xxxxxxxx.apps.googleusercontent.com"
+            style="width:100%;padding:10px 12px;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'JetBrains Mono';font-size:11px"
+            oninput="saveDriveClientId()" value="">
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Subir backup a Drive</div>
+            <div class="setting-sub" id="drive-status">No conectado</div>
+          </div>
+          <button class="btn-action" id="btn-drive" onclick="uploadToDrive()" style="background:var(--card2);border-color:var(--border)">
+            <span>☁️ Subir</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- IMPORTAR / EXPORTAR -->
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);font-weight:700;margin-bottom:12px">📁 Importar / Exportar</div>
         <div class="setting-row">
           <div>
             <div class="setting-label">Importar Repostajes (CSV)</div>
@@ -614,13 +696,6 @@ body {
         </div>
         <div class="setting-row">
           <div>
-            <div class="setting-label">Exportar todo (JSON)</div>
-            <div class="setting-sub">Backup completo</div>
-          </div>
-          <button class="btn-action green" onclick="exportJSON()">Backup</button>
-        </div>
-        <div class="setting-row">
-          <div>
             <div class="setting-label">Importar backup (JSON)</div>
             <div class="setting-sub">Restaurar datos</div>
           </div>
@@ -628,6 +703,18 @@ body {
             Restaurar
             <input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
           </label>
+        </div>
+      </div>
+
+      <!-- VEHÍCULO Y PELIGRO -->
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);font-weight:700;margin-bottom:12px">🚙 Vehículo</div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Nombre del vehículo</div>
+            <div class="setting-sub">Identificación</div>
+          </div>
+          <input id="vehicle-name" type="text" placeholder="Mi Jeep" style="width:130px;padding:8px 10px;background:var(--card2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:'Syne';font-size:13px" oninput="saveVehicleName()">
         </div>
         <div class="setting-row">
           <div>
@@ -637,9 +724,10 @@ body {
           <button class="btn-action red" onclick="clearAllData()">Borrar</button>
         </div>
       </div>
+
       <div class="card" style="text-align:center;padding:20px">
         <div style="font-size:28px;margin-bottom:8px">🚙⚡</div>
-        <div style="font-weight:800;font-size:16px">Jeep Tracker v1.6</div>
+        <div style="font-weight:800;font-size:16px">Jeep Tracker v1.7</div>
         <div style="font-size:12px;color:var(--text2);margin-top:4px">Control de vehículo híbrido</div>
         <div style="font-size:11px;color:var(--text3);margin-top:8px;font-family:'JetBrains Mono'" id="db-stats"></div>
       </div>
@@ -758,6 +846,55 @@ body {
     <div class="form-actions">
       <button class="btn-cancel" onclick="closeModal('modal-maint')">Cancelar</button>
       <button class="btn-primary" onclick="saveMaint()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL AYUDA DRIVE ── -->
+<div class="modal-bg" id="modal-drive-help">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">☁️ Configurar Google Drive</div>
+    <div style="padding:0 20px 16px">
+      <div style="background:var(--green-dim);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--green);margin-bottom:16px;font-weight:600">
+        ✅ Gratuito · Solo tú accedes a tus datos · 5 minutos
+      </div>
+      <div class="help-step">
+        <div class="help-num">1</div>
+        <div class="help-text">Ve a <strong>Google Cloud Console</strong> e inicia sesión con tu cuenta Google:<br>
+          <a class="help-link" href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a>
+        </div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">2</div>
+        <div class="help-text">Pulsa <strong>"Seleccionar proyecto"</strong> → <strong>"Nuevo proyecto"</strong> → ponle el nombre <strong>jeep-tracker</strong> → Crear</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">3</div>
+        <div class="help-text">En el menú izquierdo: <strong>APIs y servicios → Biblioteca</strong> → busca <strong>"Google Drive API"</strong> → Habilitar</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">4</div>
+        <div class="help-text">Ve a <strong>APIs y servicios → Credenciales</strong> → <strong>"Crear credenciales"</strong> → <strong>"ID de cliente OAuth"</strong></div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">5</div>
+        <div class="help-text">Tipo de aplicación: <strong>Aplicación web</strong><br>
+          En "Orígenes autorizados" añade:<br>
+          <code style="font-family:'JetBrains Mono';font-size:11px;color:var(--amber)">https://miki8888.github.io</code>
+        </div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">6</div>
+        <div class="help-text">Copia el <strong>ID de cliente</strong> (termina en <code style="font-family:'JetBrains Mono';font-size:11px">.apps.googleusercontent.com</code>) y pégalo en el campo de Ajustes</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">7</div>
+        <div class="help-text">En <strong>Pantalla de consentimiento OAuth</strong> → añade tu email como <strong>usuario de prueba</strong></div>
+      </div>
+    </div>
+    <div style="padding:0 20px">
+      <button class="btn-primary" onclick="closeModal('modal-drive-help')">Entendido</button>
     </div>
   </div>
 </div>
@@ -1679,12 +1816,15 @@ function exportMaintCSV() {
   toast('✅ CSV exportado');
 }
 
-function exportJSON() {
+function exportJSON(auto = false) {
   const data = { fuel: DB.fuel(), maint: DB.maint(), vehicleName: DB.vehicleName(), exportedAt: new Date().toISOString() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = 'jeep-tracker-backup.json'; a.click();
-  toast('✅ Backup exportado');
+  const date = new Date().toISOString().split('T')[0];
+  a.download = `jeep-tracker-backup-${date}.json`; a.click();
+  localStorage.setItem('jt_last_backup', new Date().toISOString());
+  updateLastBackupLabel();
+  if (!auto) toast('✅ Backup exportado');
 }
 
 function importJSON(input) {
@@ -1777,9 +1917,223 @@ function downloadCSV(content, filename) {
 }
 
 // ─────────────────────────────────────────────
-// INIT
+// AUTO BACKUP MENSUAL
 // ─────────────────────────────────────────────
+function initAutoBackup() {
+  const enabled = localStorage.getItem('jt_autobackup') === 'true';
+  const track = document.getElementById('toggle-autobackup');
+  if (track) track.classList.toggle('on', enabled);
+  updateLastBackupLabel();
+
+  if (enabled) {
+    const lastBackup = localStorage.getItem('jt_last_backup');
+    const now = new Date();
+    if (!lastBackup) {
+      scheduleAutoBackup();
+      return;
+    }
+    const last = new Date(lastBackup);
+    const diffDays = (now - last) / (1000 * 60 * 60 * 24);
+    if (diffDays >= 30) {
+      setTimeout(() => {
+        exportJSON(true);
+        toast('🔄 Backup automático mensual descargado');
+      }, 3000); // 3s after load so app is ready
+    }
+  }
+}
+
+function scheduleAutoBackup() {
+  localStorage.setItem('jt_last_backup', new Date().toISOString());
+  updateLastBackupLabel();
+}
+
+function toggleAutoBackup() {
+  const enabled = localStorage.getItem('jt_autobackup') === 'true';
+  const newVal = !enabled;
+  localStorage.setItem('jt_autobackup', newVal);
+  const track = document.getElementById('toggle-autobackup');
+  if (track) track.classList.toggle('on', newVal);
+  if (newVal) {
+    toast('✅ Backup automático activado');
+    scheduleAutoBackup();
+  } else {
+    toast('⏸ Backup automático desactivado');
+  }
+  updateLastBackupLabel();
+}
+
+function updateLastBackupLabel() {
+  const el = document.getElementById('last-backup-label');
+  if (!el) return;
+  const last = localStorage.getItem('jt_last_backup');
+  const enabled = localStorage.getItem('jt_autobackup') === 'true';
+  if (!enabled) { el.textContent = 'Desactivado'; return; }
+  if (!last) { el.textContent = 'Activo · Primer backup pendiente'; return; }
+  const d = new Date(last);
+  const next = new Date(d); next.setDate(next.getDate() + 30);
+  el.textContent = `Último: ${d.toLocaleDateString('es-ES')} · Próximo: ${next.toLocaleDateString('es-ES')}`;
+}
+
+// ─────────────────────────────────────────────
+// GOOGLE DRIVE
+// ─────────────────────────────────────────────
+let driveAccessToken = null;
+
+function saveDriveClientId() {
+  const val = document.getElementById('drive-client-id').value.trim();
+  localStorage.setItem('jt_drive_client_id', val);
+}
+
+function initDriveSettings() {
+  const clientId = localStorage.getItem('jt_drive_client_id') || '';
+  const el = document.getElementById('drive-client-id');
+  if (el) el.value = clientId;
+  updateDriveStatus();
+}
+
+function updateDriveStatus() {
+  const status = document.getElementById('drive-status');
+  const clientId = localStorage.getItem('jt_drive_client_id') || '';
+  if (!status) return;
+  if (!clientId) {
+    status.textContent = '⚠️ Configura tu Client ID primero';
+  } else if (driveAccessToken) {
+    status.textContent = '✅ Conectado a Google Drive';
+  } else {
+    status.textContent = 'Client ID guardado · pulsa Subir para conectar';
+  }
+}
+
+function showDriveHelp() {
+  document.getElementById('modal-drive-help').classList.add('open');
+}
+
+async function uploadToDrive() {
+  const clientId = localStorage.getItem('jt_drive_client_id') || '';
+  if (!clientId) {
+    toast('⚠️ Primero añade tu Google Client ID');
+    return;
+  }
+
+  try {
+    // Step 1: Get OAuth token
+    if (!driveAccessToken) {
+      driveAccessToken = await getDriveToken(clientId);
+    }
+    if (!driveAccessToken) return;
+
+    toast('☁️ Subiendo a Google Drive…');
+
+    // Step 2: Build backup content
+    const data = {
+      fuel: DB.fuel(), maint: DB.maint(),
+      vehicleName: DB.vehicleName(),
+      exportedAt: new Date().toISOString(),
+      version: '1.7'
+    };
+    const content = JSON.stringify(data, null, 2);
+    const filename = `jeep-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+
+    // Step 3: Check if file exists (to update instead of duplicate)
+    const searchRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name='jeep-tracker-backup.json' and trashed=false&fields=files(id,name)`,
+      { headers: { Authorization: `Bearer ${driveAccessToken}` } }
+    );
+    const searchData = await searchRes.json();
+    const existingFile = searchData.files && searchData.files[0];
+
+    let uploadRes;
+    if (existingFile) {
+      // Update existing file
+      uploadRes = await fetch(
+        `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${driveAccessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: content
+        }
+      );
+    } else {
+      // Create new file with metadata
+      const metadata = { name: 'jeep-tracker-backup.json', mimeType: 'application/json' };
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      form.append('file', new Blob([content], { type: 'application/json' }));
+      uploadRes = await fetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+        { method: 'POST', headers: { Authorization: `Bearer ${driveAccessToken}` }, body: form }
+      );
+    }
+
+    if (uploadRes.ok) {
+      localStorage.setItem('jt_drive_last_upload', new Date().toISOString());
+      updateDriveStatus();
+      toast('✅ Backup subido a Google Drive');
+    } else {
+      const err = await uploadRes.json();
+      if (uploadRes.status === 401) {
+        driveAccessToken = null;
+        toast('🔄 Sesión expirada, vuelve a intentarlo');
+      } else {
+        toast('❌ Error Drive: ' + (err.error?.message || 'desconocido'));
+      }
+    }
+  } catch (e) {
+    toast('❌ Error: ' + e.message);
+    driveAccessToken = null;
+  }
+}
+
+function getDriveToken(clientId) {
+  return new Promise((resolve) => {
+    const scope = 'https://www.googleapis.com/auth/drive.file';
+    const redirectUri = window.location.href.split('?')[0].split('#')[0];
+
+    // Check hash for token (after OAuth redirect)
+    const hash = window.location.hash;
+    if (hash.includes('access_token')) {
+      const params = new URLSearchParams(hash.substring(1));
+      const token = params.get('access_token');
+      window.location.hash = '';
+      resolve(token);
+      return;
+    }
+
+    // Redirect to Google OAuth
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${encodeURIComponent(clientId)}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=token` +
+      `&scope=${encodeURIComponent(scope)}` +
+      `&prompt=consent`;
+
+    // Save state so we know to upload after redirect
+    localStorage.setItem('jt_drive_pending', 'true');
+    window.location.href = authUrl;
+    resolve(null);
+  });
+}
+
+function checkDriveRedirect() {
+  const hash = window.location.hash;
+  if (hash.includes('access_token') && localStorage.getItem('jt_drive_pending')) {
+    const params = new URLSearchParams(hash.substring(1));
+    driveAccessToken = params.get('access_token');
+    window.location.hash = '';
+    localStorage.removeItem('jt_drive_pending');
+    updateDriveStatus();
+    // Auto upload after auth
+    setTimeout(() => uploadToDrive(), 500);
+  }
+}
 function init() {
+  // Check Drive OAuth redirect first
+  checkDriveRedirect();
+
   // Date in topbar
   document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' }).toUpperCase();
 
@@ -1790,6 +2144,10 @@ function init() {
 
   // DB stats
   document.getElementById('db-stats').textContent = `${DB.fuel().length} repostajes · ${DB.maint().length} mantenimientos`;
+
+  // Init features
+  initAutoBackup();
+  initDriveSettings();
 
   renderHome();
   renderFuel();
@@ -1816,9 +2174,8 @@ function init() {
   mlink.rel = 'manifest'; mlink.href = URL.createObjectURL(mblob);
   document.head.appendChild(mlink);
 
-  // Service Worker via blob
   // ── AUTO-UPDATE: compara versión guardada y fuerza recarga si hay nueva ──
-  const APP_VERSION = '1.6';
+  const APP_VERSION = '1.7';
   const savedVersion = localStorage.getItem('jt_version');
   if (savedVersion && savedVersion !== APP_VERSION) {
     localStorage.setItem('jt_version', APP_VERSION);

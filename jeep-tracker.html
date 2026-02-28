@@ -727,7 +727,7 @@ body {
 
       <div class="card" style="text-align:center;padding:20px">
         <div style="font-size:28px;margin-bottom:8px">🚙⚡</div>
-        <div style="font-weight:800;font-size:16px">Jeep Tracker v1.8</div>
+        <div style="font-weight:800;font-size:16px">Jeep Tracker v1.9</div>
         <div style="font-size:12px;color:var(--text2);margin-top:4px">Control de vehículo híbrido</div>
         <div style="font-size:11px;color:var(--text3);margin-top:8px;font-family:'JetBrains Mono'" id="db-stats"></div>
       </div>
@@ -1820,8 +1820,7 @@ function exportJSON(auto = false) {
   const data = { fuel: DB.fuel(), maint: DB.maint(), vehicleName: DB.vehicleName(), exportedAt: new Date().toISOString() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  const date = new Date().toISOString().split('T')[0];
-  a.download = `jeep-tracker-backup-${date}.json`; a.click();
+  a.download = `jeep-tracker-backup.json`; a.click();
   localStorage.setItem('jt_last_backup', new Date().toISOString());
   updateLastBackupLabel();
   if (!auto) toast('✅ Backup exportado');
@@ -2192,7 +2191,7 @@ function init() {
   document.head.appendChild(mlink);
 
   // ── AUTO-UPDATE: compara versión guardada y fuerza recarga si hay nueva ──
-  const APP_VERSION = '1.8';
+  const APP_VERSION = '1.9';
   const savedVersion = localStorage.getItem('jt_version');
   if (savedVersion && savedVersion !== APP_VERSION) {
     localStorage.setItem('jt_version', APP_VERSION);

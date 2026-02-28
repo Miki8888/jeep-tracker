@@ -727,7 +727,7 @@ body {
 
       <div class="card" style="text-align:center;padding:20px">
         <div style="font-size:28px;margin-bottom:8px">🚙⚡</div>
-        <div style="font-weight:800;font-size:16px">Jeep Tracker v1.7</div>
+        <div style="font-weight:800;font-size:16px">Jeep Tracker v1.8</div>
         <div style="font-size:12px;color:var(--text2);margin-top:4px">Control de vehículo híbrido</div>
         <div style="font-size:11px;color:var(--text3);margin-top:8px;font-family:'JetBrains Mono'" id="db-stats"></div>
       </div>
@@ -2025,19 +2025,39 @@ async function uploadToDrive() {
 
     toast('☁️ Subiendo a Google Drive…');
 
-    // Step 2: Build backup content
+    // Step 2: Find or create "Jeep Tracker" folder
+    let folderId = null;
+    const folderSearch = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name='Jeep Tracker' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`,
+      { headers: { Authorization: `Bearer ${driveAccessToken}` } }
+    );
+    const folderData = await folderSearch.json();
+    if (folderData.files && folderData.files.length > 0) {
+      folderId = folderData.files[0].id;
+    } else {
+      // Create folder
+      const folderRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${driveAccessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Jeep Tracker', mimeType: 'application/vnd.google-apps.folder' })
+      });
+      const folderJson = await folderRes.json();
+      folderId = folderJson.id;
+    }
+
+    // Step 3: Build backup content
     const data = {
       fuel: DB.fuel(), maint: DB.maint(),
       vehicleName: DB.vehicleName(),
       exportedAt: new Date().toISOString(),
-      version: '1.7'
+      version: '1.8'
     };
     const content = JSON.stringify(data, null, 2);
-    const filename = `jeep-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    const filename = `jeep-tracker-backup.json`;
 
-    // Step 3: Check if file exists (to update instead of duplicate)
+    // Step 4: Check if backup file already exists in folder
     const searchRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=name='jeep-tracker-backup.json' and trashed=false&fields=files(id,name)`,
+      `https://www.googleapis.com/drive/v3/files?q=name='${filename}' and '${folderId}' in parents and trashed=false&fields=files(id,name)`,
       { headers: { Authorization: `Bearer ${driveAccessToken}` } }
     );
     const searchData = await searchRes.json();
@@ -2045,21 +2065,18 @@ async function uploadToDrive() {
 
     let uploadRes;
     if (existingFile) {
-      // Update existing file
+      // Update existing file content only
       uploadRes = await fetch(
         `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`,
         {
           method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${driveAccessToken}`,
-            'Content-Type': 'application/json'
-          },
+          headers: { Authorization: `Bearer ${driveAccessToken}`, 'Content-Type': 'application/json' },
           body: content
         }
       );
     } else {
-      // Create new file with metadata
-      const metadata = { name: 'jeep-tracker-backup.json', mimeType: 'application/json' };
+      // Create new file inside Jeep Tracker folder
+      const metadata = { name: filename, mimeType: 'application/json', parents: [folderId] };
       const form = new FormData();
       form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
       form.append('file', new Blob([content], { type: 'application/json' }));
@@ -2090,7 +2107,7 @@ async function uploadToDrive() {
 
 function getDriveToken(clientId) {
   return new Promise((resolve) => {
-    const scope = 'https://www.googleapis.com/auth/drive.file';
+    const scope = 'https://www.googleapis.com/auth/drive';
     const redirectUri = window.location.href.split('?')[0].split('#')[0];
 
     // Check hash for token (after OAuth redirect)
@@ -2175,7 +2192,7 @@ function init() {
   document.head.appendChild(mlink);
 
   // ── AUTO-UPDATE: compara versión guardada y fuerza recarga si hay nueva ──
-  const APP_VERSION = '1.7';
+  const APP_VERSION = '1.8';
   const savedVersion = localStorage.getItem('jt_version');
   if (savedVersion && savedVersion !== APP_VERSION) {
     localStorage.setItem('jt_version', APP_VERSION);

@@ -630,7 +630,7 @@ body {
       </div>
       <div class="card" style="text-align:center;padding:20px">
         <div style="font-size:28px;margin-bottom:8px">🚙⚡</div>
-        <div style="font-weight:800;font-size:16px">Jeep Tracker v1.4</div>
+        <div style="font-weight:800;font-size:16px">Jeep Tracker v1.5</div>
         <div style="font-size:12px;color:var(--text2);margin-top:4px">Control de vehículo híbrido</div>
         <div style="font-size:11px;color:var(--text3);margin-top:8px;font-family:'JetBrains Mono'" id="db-stats"></div>
       </div>
@@ -1697,58 +1697,26 @@ function init() {
   document.head.appendChild(mlink);
 
   // Service Worker via blob
+  // ── AUTO-UPDATE: compara versión guardada y fuerza recarga si hay nueva ──
+  const APP_VERSION = '1.5';
+  const savedVersion = localStorage.getItem('jt_version');
+  if (savedVersion && savedVersion !== APP_VERSION) {
+    localStorage.setItem('jt_version', APP_VERSION);
+    // Limpiar caches del service worker anterior
+    if ('caches' in window) {
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+    }
+    // Forzar recarga limpia desde servidor
+    window.location.reload(true);
+    return;
+  }
+  localStorage.setItem('jt_version', APP_VERSION);
+
   if ('serviceWorker' in navigator) {
-    const APP_VERSION = '1.4';
-    const swCode = `
-      const CACHE = 'jt-v${APP_VERSION}';
-      const URLS_TO_CACHE = [self.location.href];
-
-      self.addEventListener('install', e => {
-        e.waitUntil(
-          caches.open(CACHE).then(cache => cache.addAll(URLS_TO_CACHE))
-        );
-        self.skipWaiting();
-      });
-
-      self.addEventListener('activate', e => {
-        e.waitUntil(
-          caches.keys().then(keys =>
-            Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-          ).then(() => clients.claim())
-        );
-      });
-
-      self.addEventListener('fetch', e => {
-        if (e.request.method !== 'GET') return;
-        e.respondWith(
-          fetch(e.request).then(res => {
-            const copy = res.clone();
-            caches.open(CACHE).then(cache => cache.put(e.request, copy));
-            return res;
-          }).catch(() => caches.match(e.request))
-        );
-      });
-    `;
-    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-    const swURL = URL.createObjectURL(swBlob);
-    navigator.serviceWorker.register(swURL).then(reg => {
-      // Check for updates every time the app loads
-      reg.update();
-      // Notify user when new version is ready
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'activated') {
-            const t = document.getElementById('toast');
-            if (t) {
-              t.textContent = '🔄 App actualizada a v' + APP_VERSION;
-              t.classList.add('show');
-              setTimeout(() => t.classList.remove('show'), 3500);
-            }
-          }
-        });
-      });
-    }).catch(() => {});
+    // Desregistrar SWs antiguos que puedan estar cacheando
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    });
   }
 }
 

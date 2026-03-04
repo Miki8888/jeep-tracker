@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#07090F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>BECILS Crypto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#07090F;--bg2:#0D1117;--card:#0F1923;--card2:#162030;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#F0F4FF;--text2:#8A93A8;--text3:#4A5568;
+  --amber:#F59E0B;--amber-dim:rgba(245,158,11,0.12);
+  --green:#10B981;--green-dim:rgba(16,185,129,0.12);
+  --blue:#3B82F6;--blue-dim:rgba(59,130,246,0.12);
+  --red:#EF4444;--red-dim:rgba(239,68,68,0.12);
+  --purple:#8B5CF6;--purple-dim:rgba(139,92,246,0.12);
+  --shadow:0 2px 20px rgba(0,0,0,0.5);--shadow-lg:0 8px 40px rgba(0,0,0,0.7);
+  --radius:16px;--radius-sm:10px;
+  --nav-h:72px;--safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:1.6}
+.mono{font-family:'JetBrains Mono',monospace}
+#app{display:flex;flex-direction:column;height:100%}
+#main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h) + var(--safe-bottom) + 8px)}
+.section{display:none;padding:16px;max-width:700px;margin:0 auto}
+.section.active{display:block}
+#topbar{background:rgba(7,9,15,0.9);padding:52px 20px 12px;display:flex;align-items:flex-end;justify-content:space-between;position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+#topbar h1{font-size:22px;font-weight:800;letter-spacing:-0.5px}
+.topbar-sub{font-size:11px;color:var(--text2);font-family:'JetBrains Mono';text-transform:uppercase;letter-spacing:1.6px;margin-bottom:2px}
+#nav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h) + var(--safe-bottom));background:rgba(15,25,35,0.97);border-top:1px solid var(--border);display:flex;align-items:flex-start;padding-top:8px;z-index:100;backdrop-filter:blur(20px);box-shadow:0 -4px 30px rgba(0,0,0,0.5)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;color:var(--text3);font-family:'Syne';font-size:10px;font-weight:600;padding:4px 0;transition:color 0.2s}
+.nav-btn.active{color:var(--amber)}
+.nav-btn svg{width:22px;height:22px;transition:transform 0.2s}
+.nav-btn.active svg{transform:scale(1.1)}
+.nav-dot{width:4px;height:4px;border-radius:50%;background:var(--amber);margin-top:-2px;opacity:0;transition:opacity 0.2s}
+.nav-btn.active .nav-dot{opacity:1}
+.card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.glass{background:rgba(15,25,35,0.7);backdrop-filter:blur(12px);border:1px solid var(--border2)}
+.hero{position:relative;border-radius:var(--radius);padding:24px 20px 20px;margin-bottom:12px;overflow:hidden;min-height:175px}
+.hero-bg{position:absolute;inset:0;background:linear-gradient(135deg,#0F1923 0%,#0D1117 50%,#0F1923 100%)}
+.hero-mesh{position:absolute;inset:0;overflow:hidden}
+.hero-orb{position:absolute;border-radius:50%;filter:blur(60px);animation:orb 8s ease-in-out infinite}
+.orb1{width:200px;height:200px;background:rgba(245,158,11,0.15);top:-40px;right:-40px}
+.orb2{width:150px;height:150px;background:rgba(16,185,129,0.1);bottom:-30px;left:20px;animation-delay:3s}
+.orb3{width:120px;height:120px;background:rgba(139,92,246,0.1);top:30px;left:40%;animation-delay:6s}
+@keyframes orb{0%,100%{transform:scale(1) translate(0,0)}50%{transform:scale(1.2) translate(10px,-10px)}}
+.hero-content{position:relative;z-index:2}
+.hero-label{font-size:11px;text-transform:uppercase;letter-spacing:1.6px;color:var(--text2);font-weight:600;margin-bottom:6px}
+.hero-value{font-family:'JetBrains Mono';font-size:36px;font-weight:700;line-height:1;background:linear-gradient(135deg,#F59E0B,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:13px;color:var(--text2);margin-top:6px}
+.hero-badges{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.hero-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;font-family:'JetBrains Mono'}
+.badge-green{border-color:rgba(16,185,129,0.3);color:var(--green)}
+.badge-red{border-color:rgba(239,68,68,0.3);color:var(--red)}
+.badge-purple{border-color:rgba(139,92,246,0.3);color:var(--purple)}
+.badge-blue{border-color:rgba(59,130,246,0.3);color:var(--blue)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat-card{background:var(--card);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border);box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-amber::before{background:linear-gradient(90deg,var(--amber),#FCD34D)}
+.stat-green::before{background:linear-gradient(90deg,var(--green),#34D399)}
+.stat-blue::before{background:linear-gradient(90deg,var(--blue),#60A5FA)}
+.stat-purple::before{background:linear-gradient(90deg,var(--purple),#A78BFA)}
+.stat-red::before{background:linear-gradient(90deg,var(--red),#FC8181)}
+.stat-card .label{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text2);font-weight:600;margin-bottom:4px}
+.stat-card .value{font-family:'JetBrains Mono';font-size:20px;font-weight:700;line-height:1.1}
+.stat-card .unit{font-size:11px;color:var(--text2);margin-top:2px}
+.filter-bar{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-chip{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:var(--card2);color:var(--text2);border:1px solid var(--border);transition:all 0.2s;font-family:'Syne'}
+.filter-chip.active{background:var(--amber-dim);color:var(--amber);border-color:var(--amber)}
+.crypto-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0}
+.asset-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);transition:transform 0.15s}
+.asset-card:active{transform:scale(0.98)}
+.month-group{border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:8px}
+.month-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--card2);cursor:pointer;user-select:none}
+.month-name{font-weight:700;font-size:13px}
+.month-badge{font-size:10px;font-weight:700;font-family:'JetBrains Mono';background:var(--amber-dim);color:var(--amber);padding:2px 8px;border-radius:20px}
+.month-body{display:none;background:var(--card)}
+.month-body.open{display:block}
+.month-chev{color:var(--text3);font-size:11px;transition:transform 0.25s}
+.month-chev.open{transform:rotate(180deg)}
+.op-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.op-item:last-child{border-bottom:none}
+.op-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.op-body{flex:1;min-width:0}
+.op-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.op-sub{font-size:11px;color:var(--text2);margin-top:1px}
+.op-amount{text-align:right;font-family:'JetBrains Mono';font-size:13px;font-weight:700;flex-shrink:0}
+.btn-del-sm{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:2px 4px;flex-shrink:0;transition:color 0.2s}
+.btn-del-sm:active{color:var(--red)}
+.btn-edit-sm{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:2px 4px;flex-shrink:0;transition:color 0.2s}
+.btn-edit-sm:active{color:var(--amber)}
+.staking-card{background:var(--card);border-radius:var(--radius);border:1px solid rgba(139,92,246,0.2);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:flex-start}
+.staking-icon{width:40px;height:40px;border-radius:12px;background:var(--purple-dim);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.staking-bar{height:4px;background:var(--card2);border-radius:2px;margin-top:8px;overflow:hidden}
+.staking-fill{height:100%;background:linear-gradient(90deg,var(--purple),#A78BFA);border-radius:2px}
+.chart-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
+.chart-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+.chart-wrap{position:relative;height:200px}
+.acc-year{border-top:1px solid var(--border)}
+.acc-year-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none;transition:background 0.15s}
+.acc-year-header:active{background:var(--card2)}
+.acc-year-label{font-family:'JetBrains Mono';font-size:16px;font-weight:700}
+.acc-year-badge{font-family:'JetBrains Mono';font-size:13px;padding:3px 10px;border-radius:20px;font-weight:600}
+.acc-chevron{color:var(--text3);transition:transform 0.25s;font-size:14px}
+.acc-chevron.open{transform:rotate(180deg)}
+.acc-body{display:none;padding:0 16px 14px}
+.acc-body.open{display:block}
+.acc-row{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+.acc-row:last-child{border-bottom:none}
+.acc-row-label{font-size:12px;color:var(--text2);width:50px;font-weight:600;text-transform:uppercase}
+.acc-bar-wrap{flex:1;margin:0 10px}
+.acc-bar-bg{height:5px;background:var(--card2);border-radius:3px;overflow:hidden}
+.acc-bar-fill{height:100%;border-radius:3px;transition:width 0.5s ease}
+.acc-row-val{font-family:'JetBrains Mono';font-size:12px;font-weight:600;min-width:70px;text-align:right}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase}
+.badge-buy{background:var(--green-dim);color:var(--green)}
+.badge-sell{background:var(--red-dim);color:var(--red)}
+.badge-stake{background:var(--purple-dim);color:var(--purple)}
+.badge-transfer{background:var(--blue-dim);color:var(--blue)}
+.badge-expense{background:var(--amber-dim);color:var(--amber)}
+.badge-exchange{background:rgba(255,255,255,0.08);color:var(--text2)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-label{font-weight:600;font-size:14px}
+.setting-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.btn-action{padding:10px 18px;border-radius:var(--radius-sm);font-family:'Syne';font-weight:600;font-size:13px;cursor:pointer;border:1.6px solid var(--border);background:var(--card2);color:var(--text);transition:all 0.2s}
+.btn-action.amber{background:var(--amber-dim);border-color:var(--amber);color:var(--amber)}
+.btn-action.green{background:var(--green-dim);border-color:var(--green);color:var(--green)}
+.btn-action.red{background:var(--red-dim);border-color:var(--red);color:var(--red)}
+.fab{position:fixed;bottom:calc(var(--nav-h) + var(--safe-bottom) + 16px);right:16px;width:56px;height:56px;border-radius:28px;background:linear-gradient(135deg,var(--amber),#D97706);color:#000;border:none;font-size:26px;cursor:pointer;box-shadow:0 4px 24px rgba(245,158,11,0.4);display:flex;align-items:center;justify-content:center;transition:transform 0.2s,box-shadow 0.2s;z-index:50}
+.fab:active{transform:scale(0.92)}
+.fab.hidden{display:none}
+#toast{position:fixed;bottom:calc(var(--nav-h) + var(--safe-bottom) + 80px);left:50%;transform:translateX(-50%) translateY(20px);background:var(--card);color:var(--text);padding:12px 20px;border-radius:100px;box-shadow:var(--shadow-lg);font-size:13px;font-weight:600;border:1px solid var(--border2);opacity:0;transition:all 0.3s;pointer-events:none;z-index:300;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg2);border-radius:24px 24px 0 0;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;padding:0 0 calc(24px + var(--safe-bottom));animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:40px;height:4px;border-radius:2px;background:var(--border2);margin:12px auto 4px}
+.modal-title{font-size:18px;font-weight:800;padding:8px 20px 14px}
+.modal-body{padding:0 20px}
+.modal-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.modal-row:last-child{border-bottom:none}
+.modal-key{font-size:12px;color:var(--text2);font-weight:600}
+.modal-val{font-family:'JetBrains Mono';font-size:13px;font-weight:700;text-align:right;max-width:60%}
+.form-group{padding:5px 20px}
+.form-group label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);font-weight:700;margin-bottom:5px}
+.form-group input,.form-group select{width:100%;padding:11px 13px;background:var(--card2);border:1.6px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'JetBrains Mono';font-size:14px;-webkit-appearance:none;transition:border-color 0.2s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--amber)}
+.form-group select option{background:var(--bg2);color:var(--text)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.form-actions{display:flex;gap:10px;padding:16px 20px 0}
+.btn-primary{flex:1;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--amber),#D97706);color:#000;font-family:'Syne';font-weight:800;font-size:15px;border:none;cursor:pointer;transition:opacity 0.2s}
+.btn-primary:active{opacity:0.8}
+.btn-cancel{padding:14px 20px;border-radius:var(--radius-sm);background:var(--card2);color:var(--text2);font-family:'Syne';font-weight:600;font-size:15px;border:1px solid var(--border);cursor:pointer}
+.pick-btn{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--radius-sm);background:var(--card2);border:1px solid var(--border);color:var(--text);font-family:'Syne';font-weight:700;font-size:14px;cursor:pointer;transition:all 0.2s;text-align:left;width:100%}
+.pick-btn:active{transform:scale(0.98)}
+.empty{text-align:center;padding:40px 20px;color:var(--text2)}
+.empty .icon{font-size:48px;margin-bottom:12px}
+.empty h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px}
+.divider{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:600;margin:14px 0 8px;padding:0 2px}
+#main::-webkit-scrollbar{width:0}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card,.stat-card,.asset-card,.staking-card,.chart-card{animation:fadeIn 0.25s ease both}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div>
+      <div class="topbar-sub">PORTFOLIO CRIPTO</div>
+      <h1 id="topbar-title">₿ Inicio</h1>
+    </div>
+    <div style="text-align:right">
+      <div style="font-family:'JetBrains Mono';font-size:11px;color:var(--text2)" id="topbar-date"></div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px" id="topbar-counts"></div>
+    </div>
+  </div>
+  <div id="main">
+    <div id="sec-home" class="section active">
+      <div class="hero glass">
+        <div class="hero-bg"></div>
+        <div class="hero-mesh"><div class="hero-orb orb1"></div><div class="hero-orb orb2"></div><div class="hero-orb orb3"></div></div>
+        <div class="hero-content">
+          <div class="hero-label">Total Invertido (Fiat)</div>
+          <div class="hero-value" id="hero-total">— €</div>
+          <div class="hero-sub" id="hero-sub">Importa tu Excel o añade registros con +</div>
+          <div class="hero-badges" id="hero-badges"></div>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card stat-green"><div class="label">Recuperado Ventas</div><div class="value" id="s-recuperado">—</div><div class="unit">Total operaciones</div></div>
+        <div class="stat-card stat-amber"><div class="label">Balance Neto</div><div class="value" id="s-balance">—</div><div class="unit">Ventas − Invertido</div></div>
+        <div class="stat-card stat-purple"><div class="label">Staking Rewards</div><div class="value" id="s-staking">—</div><div class="unit">Ganancias acumuladas</div></div>
+        <div class="stat-card stat-blue"><div class="label">Operaciones</div><div class="value" id="s-ops">—</div><div class="unit">Compras + Ventas</div></div>
+      </div>
+      <div class="divider" id="div-recent" style="display:none">Actividad reciente</div>
+      <div id="home-recent"></div>
+      <div class="divider" id="div-staking" style="display:none">Staking activo</div>
+      <div id="home-staking"></div>
+    </div>
+    <div id="sec-portfolio" class="section">
+      <div class="stats-grid">
+        <div class="stat-card stat-amber"><div class="label">Activos con saldo</div><div class="value" id="port-count">—</div><div class="unit">Stock > 0</div></div>
+        <div class="stat-card stat-purple"><div class="label">Divisas registradas</div><div class="value" id="port-total">—</div><div class="unit">Total en DIVISA</div></div>
+      </div>
+      <div class="divider">Con saldo</div><div id="portfolio-list"></div>
+      <div class="divider">Sin saldo (historial)</div><div id="portfolio-zero"></div>
+    </div>
+    <div id="sec-ops" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px">
+        <h2 style="font-size:18px;font-weight:800">Historial</h2>
+        <div style="background:var(--amber-dim);color:var(--amber);font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;font-family:'JetBrains Mono'" id="ops-count">0</div>
+      </div>
+      <div class="filter-bar" id="ops-filters">
+        <div class="filter-chip active" onclick="setOpsFilter('all',this)">Todas</div>
+        <div class="filter-chip" onclick="setOpsFilter('compra',this)">🟢 Compras</div>
+        <div class="filter-chip" onclick="setOpsFilter('venta',this)">🔴 Ventas</div>
+        <div class="filter-chip" onclick="setOpsFilter('staking',this)">🟣 Staking</div>
+        <div class="filter-chip" onclick="setOpsFilter('gasto',this)">🟡 Gastos €</div>
+        <div class="filter-chip" onclick="setOpsFilter('traspaso',this)">🔵 Traspasos</div>
+      </div>
+      <div id="ops-list"></div>
+    </div>
+    <div id="sec-stats" class="section">
+      <div style="font-size:18px;font-weight:800;margin-bottom:12px;padding-top:4px">Estadísticas</div>
+      <div class="chart-card" style="padding:0;overflow:hidden">
+        <div style="padding:16px 16px 10px;display:flex;justify-content:space-between;align-items:center">
+          <div class="chart-title" style="margin:0">💸 Inversión fiat por año</div>
+          <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono'">toca para desglosar</span>
+        </div>
+        <div id="invest-accordion"></div>
+      </div>
+      <div class="chart-card"><div class="chart-title">📈 Acumulado invertido en el tiempo</div><div class="chart-wrap"><canvas id="chart-acum"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">💹 P&amp;L por operación de venta ($)</div><div class="chart-wrap" style="height:220px"><canvas id="chart-pnl"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">🍩 Distribución del portfolio</div><div class="chart-wrap" style="height:240px"><canvas id="chart-portfolio"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">🏦 Compras por exchange</div><div class="chart-wrap" style="height:220px"><canvas id="chart-exchange"></canvas></div></div>
+    </div>
+    <div id="sec-settings" class="section">
+      <div style="font-size:18px;font-weight:800;margin-bottom:12px;padding-top:4px">Ajustes</div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);font-weight:700;margin-bottom:12px">📥 Importar Excel</div>
+        <div class="setting-row">
+          <div><div class="setting-label">Importar BECILS.xlsx</div><div class="setting-sub">Lee las 7 hojas automáticamente</div></div>
+          <label class="btn-action amber" style="cursor:pointer">Importar<input type="file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)"></label>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);font-weight:700;margin-bottom:12px">📤 Backup</div>
+        <div class="setting-row">
+          <div><div class="setting-label">Exportar backup (JSON)</div><div class="setting-sub">Todos los datos</div></div>
+          <button class="btn-action green" onclick="exportJSON()">Backup</button>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">Restaurar backup (JSON)</div><div class="setting-sub">Importar copia anterior</div></div>
+          <label class="btn-action amber" style="cursor:pointer">Restaurar<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);font-weight:700;margin-bottom:12px">⚠️ Peligro</div>
+        <div class="setting-row">
+          <div><div class="setting-label">Borrar todos los datos</div><div class="setting-sub">Acción irreversible</div></div>
+          <button class="btn-action red" onclick="clearAll()">Borrar</button>
+        </div>
+      </div>
+      <div class="card" style="text-align:center;padding:24px">
+        <div style="font-size:36px;margin-bottom:10px">₿</div>
+        <div style="font-weight:800;font-size:18px;background:linear-gradient(135deg,#F59E0B,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">BECILS Crypto</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v2.3 · Datos locales</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:12px;font-family:'JetBrains Mono'" id="db-stats">Sin datos</div>
+      </div>
+    </div>
+  </div>
+  <nav id="nav">
+    <button class="nav-btn active" data-sec="home" onclick="showSection('home')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Inicio<div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" data-sec="portfolio" onclick="showSection('portfolio')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+      Portfolio<div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" data-sec="ops" onclick="showSection('ops')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+      Historial<div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" data-sec="stats" onclick="showSection('stats')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+      Stats<div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" data-sec="settings" onclick="showSection('settings')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.68c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      Ajustes<div class="nav-dot"></div>
+    </button>
+  </nav>
+</div>
+
+<button class="fab" id="fab" onclick="openFab()">＋</button>
+
+<div class="modal-bg" id="modal-pick">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Añadir registro</div>
+    <div style="padding:0 20px 4px;display:flex;flex-direction:column;gap:8px">
+      <button class="pick-btn" onclick="openForm('compra')"><div style="background:var(--green-dim);font-size:20px;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🛒</div><div><div style="font-size:14px;font-weight:700">Nueva Compra</div><div style="font-size:12px;color:var(--text2);font-weight:400">Registrar una compra de cripto</div></div></button>
+      <button class="pick-btn" onclick="openForm('venta')"><div style="background:var(--red-dim);font-size:20px;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">💰</div><div><div style="font-size:14px;font-weight:700">Nueva Venta</div><div style="font-size:12px;color:var(--text2);font-weight:400">Registrar venta o intercambio</div></div></button>
+      <button class="pick-btn" onclick="openForm('staking')"><div style="background:var(--purple-dim);font-size:20px;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">⚡</div><div><div style="font-size:14px;font-weight:700">Nuevo Staking</div><div style="font-size:12px;color:var(--text2);font-weight:400">Añadir posición de staking</div></div></button>
+      <button class="pick-btn" onclick="openForm('gasto')"><div style="background:var(--amber-dim);font-size:20px;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">💶</div><div><div style="font-size:14px;font-weight:700">Nuevo Gasto €</div><div style="font-size:12px;color:var(--text2);font-weight:400">Ingreso de fiat al exchange</div></div></button>
+      <button class="pick-btn" onclick="openForm('traspaso')"><div style="background:var(--blue-dim);font-size:20px;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">↔️</div><div><div style="font-size:14px;font-weight:700">Nuevo Traspaso</div><div style="font-size:12px;color:var(--text2);font-weight:400">Traspaso entre exchanges</div></div></button>
+      <button class="pick-btn" onclick="openForm('divisa')"><div style="background:rgba(255,255,255,0.06);font-size:20px;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🪙</div><div><div style="font-size:14px;font-weight:700">Nueva Divisa</div><div style="font-size:12px;color:var(--text2);font-weight:400">Añadir activo al catálogo</div></div></button>
+      <button class="pick-btn" onclick="openForm('exchange')"><div style="background:rgba(255,255,255,0.06);font-size:20px;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🏦</div><div><div style="font-size:14px;font-weight:700">Nuevo Exchange</div><div style="font-size:12px;color:var(--text2);font-weight:400">Registrar plataforma</div></div></button>
+    </div>
+    <div style="padding:14px 20px 0"><button class="btn-cancel" style="width:100%;text-align:center" onclick="closeModal('modal-pick')">Cancelar</button></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-form">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mf-title">Nuevo registro</div>
+    <div id="mf-body"></div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-form')">Cancelar</button>
+      <button class="btn-primary" id="mf-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-detail">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="md-title">Detalle</div>
+    <div class="modal-body" id="md-body"></div>
+    <div style="padding:16px 20px 0"><button class="btn-cancel" style="width:100%;text-align:center" onclick="closeModal('modal-detail')">Cerrar</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const CM={
+  'BITCOIN':{e:'₿',c:'#F7931A'},'ETHEREUM':{e:'Ξ',c:'#627EEA'},'SOL':{e:'◎',c:'#9945FF'},
+  'SOLANA':{e:'◎',c:'#9945FF'},'ADA':{e:'₳',c:'#0033AD'},'USDT':{e:'₮',c:'#26A17B'},
+  'LINK':{e:'⬡',c:'#2A5ADA'},'MATIC':{e:'⬡',c:'#8247E5'},'BNB':{e:'◆',c:'#F3BA2F'},
+  'BNB BINANCE':{e:'◆',c:'#F3BA2F'},'SHIBA INU':{e:'🐕',c:'#FF9500'},'IOTA':{e:'◆',c:'#00B0FF'},
+  'LITECOIN':{e:'Ł',c:'#BFBBBB'},'VET':{e:'V',c:'#00D3DF'},'AURORA':{e:'◈',c:'#70D44B'},
+  'PULLIX':{e:'◈',c:'#E040FB'},'KCS KUCOIN':{e:'K',c:'#23AF91'},'LUCKY BLOCK':{e:'🍀',c:'#F59E0B'},
+  'MUSHE (XMU)':{e:'M',c:'#FF6B6B'},'MUSHE':{e:'M',c:'#FF6B6B'},'ORDI':{e:'O',c:'#FF9900'},
+  'TIA':{e:'T',c:'#6C35DE'},'BONK':{e:'🐶',c:'#FC9D03'},'STX STACK':{e:'S',c:'#5546FF'},
+  'IOTX':{e:'I',c:'#44E0FF'},'IMX':{e:'I',c:'#17B169'},'ARBITRIUM (ARB)':{e:'A',c:'#28A0F0'},
+  'SUTER':{e:'S',c:'#FF6B35'},'MAVIA':{e:'M',c:'#C084FC'},'TERRA CLASSIC LUNC':{e:'◑',c:'#172852'},
+  'AGIX':{e:'A',c:'#5E72EB'},'HBAR':{e:'H',c:'#00B98D'},'KAS':{e:'K',c:'#70EDAE'},
+  'ICP':{e:'∞',c:'#3B00B9'},'SAUCE':{e:'🌶',c:'#FF4500'},'RIB':{e:'R',c:'#FF6B6B'},
+  'PICKA':{e:'P',c:'#FF69B4'},'DRAGON2024':{e:'🐉',c:'#FF4500'},'SOP':{e:'S',c:'#4A90E2'},
+  'SHRAP':{e:'⚡',c:'#FFD700'},'NSC':{e:'N',c:'#00CED1'},
+};
+function cm(n=''){const k=n.toUpperCase().trim();return CM[k]||{e:k.charAt(0)||'?',c:'#8A93A8'};}
+const DB={
+  get:k=>{try{return JSON.parse(localStorage.getItem('bc_'+k)||'[]');}catch{return[];}},
+  set:(k,v)=>localStorage.setItem('bc_'+k,JSON.stringify(v)),
+  compras:()=>DB.get('compras'),ventas:()=>DB.get('ventas'),exchanges:()=>DB.get('exchanges'),
+  divisas:()=>DB.get('divisas'),staking:()=>DB.get('staking'),traspasos:()=>DB.get('traspasos'),gastos:()=>DB.get('gastos'),
+};
+function uid(){return Math.random().toString(36).substr(2,8);}
+function getExchName(id){if(!id)return'—';const e=DB.exchanges().find(e=>e.id===id);return e?e.nombre:id;}
+function getDivNombre(id){if(!id)return'—';const d=DB.divisas().find(d=>d.id===id);return d?d.nombre:id;}
+function getDivId(name){const d=DB.divisas().find(d=>d.nombre.toUpperCase()===name.toUpperCase().trim());return d?d.id:name.toUpperCase().trim();}
+const MES_FULL=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function fmt(n,dec=2){if(n==null||isNaN(n))return'—';return Number(n).toLocaleString('es-ES',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
+function fmtSh(n){if(n==null||isNaN(n))return'—';if(Math.abs(n)>=1e6)return fmt(n/1e6,2)+'M';if(Math.abs(n)>=1e3)return fmt(n/1e3,1)+'K';return fmt(n,2);}
+function fmtDS(d){if(!d)return'—';if(d.includes('-')){const[y,m,dd]=d.split('-');return`${dd}/${MES[parseInt(m)]}/${y.substr(2)}`;}return d;}
+function fmtStock(n){if(!n&&n!==0)return'—';if(Math.abs(n)>=1e9)return fmt(n/1e9,3)+'B';if(Math.abs(n)>=1e6)return fmt(n/1e6,3)+'M';if(Math.abs(n)>=1e3)return fmt(n/1e3,3)+'K';if(Math.abs(n)<0.001&&n!==0)return n.toExponential(3);return fmt(n,4);}
+function today(){return new Date().toISOString().split('T')[0];}
+function parseExcelDate(val){
+  if(!val&&val!==0)return'';
+  if(val instanceof Date){const d=val;return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+  if(typeof val==='number'){const d=new Date(Math.round((val-25569)*86400*1000));d.setMinutes(d.getMinutes()+d.getTimezoneOffset());return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+  if(typeof val==='string'){val=val.trim();if(/^\d{4}-\d{2}-\d{2}/.test(val))return val.substr(0,10);const m=val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);if(m){const mo=m[1].padStart(2,'0'),dd=m[2].padStart(2,'0'),yr=m[3].length===2?'20'+m[3]:m[3];return`${yr}-${mo}-${dd}`;}}
+  return String(val);
+}
+function parseCur(v){if(!v&&v!==0)return 0;if(typeof v==='number')return v;return parseFloat(String(v).replace(/[$€£\s]/g,'').replace(/\./g,'').replace(',','.'))||0;}
+function parseNum(v){if(!v&&v!==0)return 0;if(typeof v==='number')return v;return parseFloat(String(v).replace(',','.'))||0;}
+function hdr(row,...keys){for(const k of keys)for(const[rk,rv]of Object.entries(row)){if(rk.trim().toUpperCase()===k.toUpperCase())return rv;}return undefined;}
+let curSec='home';
+const titles={home:'₿ Inicio',portfolio:'💼 Portfolio',ops:'📋 Historial',stats:'📊 Estadísticas',settings:'⚙️ Ajustes'};
+function showSection(name){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  document.querySelector(`[data-sec="${name}"]`).classList.add('active');
+  document.getElementById('topbar-title').textContent=titles[name]||name;
+  document.getElementById('fab').classList.toggle('hidden',name==='stats'||name==='settings');
+  curSec=name;
+  if(name==='home')renderHome();
+  if(name==='portfolio')renderPortfolio();
+  if(name==='ops')renderOps();
+  if(name==='stats')renderStats();
+  document.getElementById('main').scrollTo(0,0);
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function showDetail(title,rows){
+  document.getElementById('md-title').textContent=title;
+  document.getElementById('md-body').innerHTML=rows.map(r=>`<div class="modal-row"><div class="modal-key">${r[0]}</div><div class="modal-val" style="${r[2]||''}">${r[1]}</div></div>`).join('');
+  openModal('modal-detail');
+}
+function openFab(){
+  if(curSec==='ops'&&opsFilter!=='all'){openForm(opsFilter==='intercambio'?'venta':opsFilter);}
+  else{openModal('modal-pick');}
+}
+let curFormType='';
+let curEditId=null;
+function openEdit(type,id){
+  const map={compra:'compras',venta:'ventas',staking:'staking',gasto:'gastos',traspaso:'traspasos',divisa:'divisas',exchange:'exchanges'};
+  const rec=DB.get(map[type]||type+'s').find(r=>r.id===id);
+  if(!rec){toast('❌ Registro no encontrado');return;}
+  curEditId=id;
+  openForm(type,rec);
+}
+function setFF(id,val){const e=document.getElementById('ff-'+id);if(e&&val!=null&&val!=='')e.value=val;}
+function fg(id,label,type,opts={}){
+  if(type==='date')return`<div class="form-group"><label>${label}</label><input type="date" id="ff-${id}" value="${opts.def||today()}"></div>`;
+  if(type==='number')return`<div class="form-group"><label>${label}</label><input type="number" id="ff-${id}" step="any" placeholder="${opts.ph||''}" value="${opts.def||''}"></div>`;
+  if(type==='text')return`<div class="form-group"><label>${label}</label><input type="text" id="ff-${id}" placeholder="${opts.ph||''}"></div>`;
+  if(type==='select'){const options=opts.options.map(o=>typeof o==='string'?`<option>${o}</option>`:`<option value="${o.v}">${o.l}</option>`).join('');return`<div class="form-group"><label>${label}</label><select id="ff-${id}"><option value="">— Seleccionar —</option>${options}</select></div>`;}
+  if(type==='cripto'){const divs=DB.divisas();if(divs.length){const opts2=divs.map(d=>`<option value="${d.id}">${d.nombre}</option>`).join('');return`<div class="form-group"><label>${label}</label><select id="ff-${id}"><option value="">— Seleccionar —</option>${opts2}</select></div>`;}return`<div class="form-group"><label>${label}</label><input type="text" id="ff-${id}" placeholder="BITCOIN, SOL, ETH..."></div>`;}
+  if(type==='exchange'){const exchs=DB.exchanges();if(exchs.length){const opts2=exchs.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');return`<div class="form-group"><label>${label}</label><select id="ff-${id}"><option value="">— Seleccionar —</option>${opts2}</select></div>`;}return`<div class="form-group"><label>${label}</label><input type="text" id="ff-${id}" placeholder="Kucoin, Kraken..."></div>`;}
+  return'';
+}
+function fr(...f){return`<div class="form-row">${f.join('')}</div>`;}
+function buildFormBody(type){
+  switch(type){
+    case'compra':return fr(fg('fecha','Fecha','date'),fg('exchange','Exchange','exchange'))+fg('divisa','Cripto / Divisa','cripto')+fr(fg('precioU','Precio Unidad','number',{ph:'0.00'}),fg('moneda','Moneda','select',{options:['Euros','USDT','USD']}))+fr(fg('cantidad','Cantidad','number',{ph:'0.00000000'}),fg('coste','Coste Total','number',{ph:'0.00'}))+fr(fg('comision','Comisiones','number',{ph:'0.00'}),fg('web','Plataforma / Web','text',{ph:'Kraken, MEXC...'}))+fg('obs','Observaciones','text',{ph:'Opcional'});
+    case'venta':return fr(fg('fecha','Fecha','date'),fg('exchange','Exchange','exchange'))+fg('divisa','Cripto / Divisa','cripto')+fr(fg('precioUC','Precio U. Compra ($)','number',{ph:'0.00'}),fg('precioUV','Precio U. Venta ($)','number',{ph:'0.00'}))+fr(fg('cantidad','Cantidad','number',{ph:'0.000000'}),fg('operacion','Tipo','select',{options:['VENTA','INTERCAMBIO']}))+fr(fg('total','Total Operación ($)','number',{ph:'0.00'}),fg('ganancia','Ganancia / Pérdida ($)','number',{ph:'0.00'}))+fg('comision','Comisiones','number',{ph:'0.00'});
+    case'staking':return fg('divisa','Cripto / Divisa','cripto')+fr(fg('exchange','Exchange','exchange'),fg('cantidad','Cantidad en Staking','number',{ph:'0.00'}))+fr(fg('fechaI','Fecha Inicio','date'),fg('fechaF','Fecha Final (opcional)','date'))+fr(fg('ganancias','Ganancias Acumuladas','number',{ph:'0.000'}),fg('sumaTotal','Suma Total','number',{ph:'0.00'}))+fg('obs','Observaciones','text',{ph:'Flexible, bonded 15%, etc.'});
+    case'gasto':return fr(fg('fecha','Fecha','date'),fg('web','Plataforma / Web','text',{ph:'MEXC, Kraken...'}))+fr(fg('euros','Euros invertidos','number',{ph:'0.00'}),fg('usdt','USDT equivalente','number',{ph:'0.00'}))+fg('obs','Observaciones','text',{ph:'Descripción del ingreso fiat'});
+    case'traspaso':return fg('divisa','Cripto / Divisa','cripto')+fr(fg('exOrigen','Exchange Origen','exchange'),fg('exDestino','Exchange Destino','exchange'))+fr(fg('fecha','Fecha','date'),fg('enviada','Cantidad Enviada (€)','number',{ph:'0.00'}))+fr(fg('comision','Comisiones (€)','number',{ph:'0.00'}),fg('recibida','Cantidad Recibida (€)','number',{ph:'0.00'}))+fg('obs','Observaciones','text',{ph:'Opcional'});
+    case'divisa':return fr(fg('nombre','Nombre del activo','text',{ph:'BITCOIN, SOLANA...'}),fg('id','ID personalizado (opcional)','text',{ph:'auto'}))+fg('stock','Stock actual','number',{ph:'0.00000000'});
+    case'exchange':return fr(fg('nombre','Nombre del exchange','text',{ph:'KRAKEN, MEXC...'}),fg('id','ID personalizado (opcional)','text',{ph:'auto'}))+fg('divisas','Divisas que opera','text',{ph:'Bitcoin, ETH, SOL...'});
+    default:return'';
+  }
+}
+function openForm(type,rec=null){
+  curFormType=type;if(!rec)curEditId=null;closeModal('modal-pick');
+  const titulos={compra:'🛒 Nueva Compra',venta:'💰 Nueva Venta',staking:'⚡ Nuevo Staking',gasto:'💶 Nuevo Gasto €',traspaso:'↔️ Nuevo Traspaso',divisa:'🪙 Nueva Divisa',exchange:'🏦 Nuevo Exchange'};
+  const titulosEdit={compra:'✏️ Editar Compra',venta:'✏️ Editar Venta',staking:'✏️ Editar Staking',gasto:'✏️ Editar Gasto €',traspaso:'✏️ Editar Traspaso',divisa:'✏️ Editar Divisa',exchange:'✏️ Editar Exchange'};
+  document.getElementById('mf-title').textContent=(rec?titulosEdit:titulos)[type]||'Registro';
+  document.getElementById('mf-body').innerHTML=buildFormBody(type);
+  document.getElementById('mf-save').onclick=()=>saveForm(type);
+  if(rec){
+    setTimeout(()=>{
+      if(type==='compra'){setFF('fecha',rec.fecha);setFF('exchange',rec.exchangeId);setFF('divisa',rec.divisaId);setFF('precioU',rec.precioUnidad);setFF('moneda',rec.moneda||rec.monedaCosto);setFF('cantidad',rec.cantidad);setFF('coste',rec.costeCompra);setFF('comision',rec.comisiones);setFF('web',rec.webCompra);setFF('obs',rec.obs);}
+      else if(type==='venta'){setFF('fecha',rec.fecha);setFF('exchange',rec.exchangeId);setFF('divisa',rec.divisaId);setFF('precioUC',rec.precioUCompra);setFF('precioUV',rec.precioUVenta);setFF('cantidad',rec.cantidad);setFF('operacion',rec.operacion);setFF('total',rec.totalOperacion);setFF('ganancia',rec.ganancia);setFF('comision',rec.comisiones);}
+      else if(type==='staking'){setFF('divisa',rec.divisaId);setFF('exchange',rec.exchangeId);setFF('cantidad',rec.cantidad);setFF('fechaI',rec.fechaInicio);setFF('fechaF',rec.fechaFinal);setFF('ganancias',rec.ganancias);setFF('sumaTotal',rec.sumaTotal);setFF('obs',rec.obs);}
+      else if(type==='gasto'){setFF('fecha',rec.fecha);setFF('web',rec.web);setFF('euros',rec.euros);setFF('usdt',rec.usdt);setFF('obs',rec.obs);}
+      else if(type==='traspaso'){setFF('divisa',rec.divisaId);setFF('exOrigen',rec.exchangeId);setFF('exDestino',rec.altaExchange);setFF('fecha',rec.fecha);setFF('enviada',rec.cantidadEnviada);setFF('comision',rec.comisiones);setFF('recibida',rec.cantidadRecibida);setFF('obs',rec.obs);}
+      else if(type==='divisa'){setFF('nombre',rec.nombre);setFF('id',rec.id);setFF('stock',rec.stock);}
+      else if(type==='exchange'){setFF('nombre',rec.nombre);setFF('id',rec.id);setFF('divisas',rec.divisas);}
+    },50);
+  }
+  openModal('modal-form');
+}
+function gff(id){const e=document.getElementById('ff-'+id);return e?(e.value||'').trim():'';}
+function gffN(id){return parseFloat((gff(id)||'0').replace(',','.'))||0;}
+function saveForm(type){
+  const isEdit=!!curEditId;const editId=curEditId;
+  function upsert(key,rec){
+    const arr=DB.get(key);
+    if(isEdit){DB.set(key,arr.map(r=>r.id===editId?rec:r));}
+    else{DB.set(key,[...arr,rec]);}
+    curEditId=null;closeModal('modal-form');renderAll();toast(isEdit?'✅ Registro actualizado':'✅ Guardado');
+  }
+  switch(type){
+    case'compra':{const divVal=gff('divisa');if(!divVal){toast('⚠️ Selecciona o escribe una divisa');return;}const divisaId=DB.divisas().find(d=>d.id===divVal)?divVal:getDivId(divVal);const r={id:editId||uid(),fecha:gff('fecha'),divisaId,precioUnidad:gffN('precioU'),moneda:gff('moneda'),cantidad:gffN('cantidad'),costeCompra:gffN('coste'),comisiones:gffN('comision'),monedaCosto:gff('moneda'),webCompra:gff('web'),exchangeId:gff('exchange'),obs:gff('obs')};if(!r.fecha){toast('⚠️ La fecha es obligatoria');return;}upsert('compras',r);break;}
+    case'venta':{const divVal=gff('divisa');if(!divVal){toast('⚠️ Selecciona o escribe una divisa');return;}const divisaId=DB.divisas().find(d=>d.id===divVal)?divVal:getDivId(divVal);const r={id:editId||uid(),exchangeId:gff('exchange'),fecha:gff('fecha'),divisaId,precioUCompra:gffN('precioUC'),precioUVenta:gffN('precioUV'),cantidad:gffN('cantidad'),comisiones:gffN('comision'),operacion:gff('operacion')||'VENTA',totalOperacion:gffN('total'),ganancia:gffN('ganancia')};if(!r.fecha){toast('⚠️ La fecha es obligatoria');return;}upsert('ventas',r);break;}
+    case'staking':{const divVal=gff('divisa');if(!divVal){toast('⚠️ Selecciona una divisa');return;}const divisaId=DB.divisas().find(d=>d.id===divVal)?divVal:getDivId(divVal);const r={id:editId||uid(),divisaId,exchangeId:gff('exchange'),cantidad:gffN('cantidad'),fechaInicio:gff('fechaI'),fechaFinal:gff('fechaF'),ganancias:gffN('ganancias'),obs:gff('obs'),sumaTotal:gffN('sumaTotal'),activo:''};upsert('staking',r);break;}
+    case'gasto':{const euros=gffN('euros');if(!euros){toast('⚠️ Introduce los euros invertidos');return;}const r={id:editId||uid(),euros,usdt:gffN('usdt'),web:gff('web'),fecha:gff('fecha'),obs:gff('obs')};upsert('gastos',r);break;}
+    case'traspaso':{const divVal=gff('divisa');const divisaId=divVal&&DB.divisas().find(d=>d.id===divVal)?divVal:getDivId(divVal);const r={id:editId||uid(),divisaId,exchangeId:gff('exOrigen'),altaExchange:gff('exDestino'),fecha:gff('fecha'),cantidadEnviada:gffN('enviada'),comisiones:gffN('comision'),cantidadRecibida:gffN('recibida'),obs:gff('obs')};upsert('traspasos',r);break;}
+    case'divisa':{const nombre=gff('nombre').toUpperCase();if(!nombre){toast('⚠️ El nombre es obligatorio');return;}const id=gff('id')||editId||uid();const r={id,nombre,ref:nombre,stock:gffN('stock')};const divs=DB.divisas().filter(d=>d.id!==id);divs.push(r);DB.set('divisas',divs);curEditId=null;closeModal('modal-form');renderAll();toast(isEdit?'✅ Divisa actualizada':'✅ Divisa guardada');break;}
+    case'exchange':{const nombre=gff('nombre');if(!nombre){toast('⚠️ El nombre es obligatorio');return;}const id=gff('id')||editId||uid();const r={id,nombre,divisas:gff('divisas'),obs:''};const exchs=DB.exchanges().filter(e=>e.id!==id);exchs.push(r);DB.set('exchanges',exchs);curEditId=null;closeModal('modal-form');renderAll();toast(isEdit?'✅ Exchange actualizado':'✅ Exchange guardado');break;}
+  }
+}
+function deleteRecord(type,id){
+  if(!confirm('¿Eliminar este registro?'))return;
+  const map={compra:'compras',venta:'ventas',staking:'staking',gasto:'gastos',traspaso:'traspasos'};
+  const key=map[type];if(!key)return;
+  DB.set(key,DB.get(key).filter(r=>r.id!==id));
+  renderAll();toast('🗑 Registro eliminado');
+}
+function renderHome(){
+  const compras=DB.compras(),ventas=DB.ventas(),staking=DB.staking(),gastos=DB.gastos();
+  const totalFiat=gastos.reduce((s,g)=>s+(g.euros||0),0);
+  const ventasReal=ventas.filter(v=>v.operacion==='VENTA'||!v.operacion||v.operacion==='');
+  const totalRec=ventasReal.reduce((s,v)=>s+(v.totalOperacion||0),0);
+  const totalStaking=staking.reduce((s,k)=>s+(k.ganancias||0),0);
+  const balance=totalRec-totalFiat;
+  document.getElementById('hero-total').textContent=fmt(totalFiat,2)+' €';
+  document.getElementById('hero-sub').textContent=`${compras.length} compras · ${ventas.length} ventas · ${gastos.length} ingresos fiat`;
+  document.getElementById('hero-badges').innerHTML=`<div class="hero-badge ${balance>=0?'badge-green':'badge-red'}">${balance>=0?'▲':'▼'} ${fmt(Math.abs(balance),2)} €</div><div class="hero-badge badge-purple">⚡ ${fmt(totalStaking,4)}</div><div class="hero-badge badge-blue">🏦 ${DB.exchanges().length} exchanges</div>`;
+  document.getElementById('s-recuperado').textContent=fmtSh(totalRec)+' $';
+  const bEl=document.getElementById('s-balance');bEl.textContent=(balance>=0?'+':'')+fmtSh(balance)+' €';bEl.style.color=balance>=0?'var(--green)':'var(--red)';
+  document.getElementById('s-staking').textContent=fmt(totalStaking,4);
+  document.getElementById('s-ops').textContent=compras.length+ventas.length;
+  const allOps=[...compras.map(c=>({tipo:'compra',fecha:c.fecha,divId:c.divisaId,amount:c.costeCompra,moneda:c.monedaCosto||'€',exchId:c.exchangeId})),...ventas.map(v=>({tipo:'venta',fecha:v.fecha,divId:v.divisaId,amount:v.totalOperacion,moneda:'$',exchId:v.exchangeId}))].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,6);
+  const rEl=document.getElementById('home-recent');
+  const divRecent=document.getElementById('div-recent');
+  const divStaking=document.getElementById('div-staking');
+  const sEl=document.getElementById('home-staking');
+  if(!allOps.length){rEl.innerHTML='<div class="empty"><div class="icon">₿</div><h3>Sin datos</h3><p>Usa el botón + para añadir registros<br>o importa tu Excel desde Ajustes</p></div>';divRecent.style.display='none';divStaking.style.display='none';sEl.innerHTML='';return;}
+  divRecent.style.display='';
+  rEl.innerHTML='<div class="card" style="padding:6px 14px">'+allOps.map(op=>{const n=getDivNombre(op.divId)||op.divId;const m=cm(n);const isBuy=op.tipo==='compra';return`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)"><div class="crypto-icon" style="background:${m.c}22;color:${m.c};font-size:16px">${m.e}</div><div style="flex:1"><div style="font-weight:700;font-size:13px">${n}</div><div style="font-size:11px;color:var(--text2)">${fmtDS(op.fecha)} · ${getExchName(op.exchId)}</div></div><div style="text-align:right"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:${isBuy?'var(--red)':'var(--green)'}">${isBuy?'-':'+'}${fmt(op.amount,2)} ${op.moneda}</div><span class="badge ${isBuy?'badge-buy':'badge-sell'}">${isBuy?'COMPRA':'VENTA'}</span></div></div>`;}).join('')+'</div>';
+  const actStk=staking.filter(s=>!s.fechaFinal||s.fechaFinal>=today()).slice(0,4);
+  if(!actStk.length){divStaking.style.display='none';sEl.innerHTML='';return;}
+  divStaking.style.display='';
+  sEl.innerHTML=actStk.map(s=>{const n=getDivNombre(s.divisaId);const m=cm(n);return`<div class="staking-card"><div class="staking-icon">${m.e}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">${n}</div><div style="font-size:12px;color:var(--text2);margin-top:2px">${getExchName(s.exchangeId)} · desde ${fmtDS(s.fechaInicio)}</div><div class="staking-bar"><div class="staking-fill" style="width:100%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:4px">${s.obs||''}</div></div><div style="text-align:right"><div style="font-family:'JetBrains Mono';font-size:14px;font-weight:700;color:var(--purple)">+${fmt(s.ganancias,4)}</div><div style="font-size:10px;margin-top:2px;color:${s.fechaFinal?'var(--amber)':'var(--green)'}">● ${s.fechaFinal?fmtDS(s.fechaFinal):'FLEXIBLE'}</div></div></div>`;}).join('');
+}
+function renderPortfolio(){
+  const divisas=DB.divisas(),compras=DB.compras(),staking=DB.staking();
+  const withStock=divisas.filter(d=>d.stock>0).sort((a,b)=>b.stock-a.stock);
+  const noStock=divisas.filter(d=>!d.stock||d.stock<=0);
+  document.getElementById('port-count').textContent=withStock.length;
+  document.getElementById('port-total').textContent=divisas.length;
+  function buildCard(d,faded=false){
+    const meta=cm(d.nombre);const myBuys=compras.filter(c=>c.divisaId===d.id&&c.costeCompra>0);
+    const exchIds=[...new Set(myBuys.map(c=>c.exchangeId).filter(Boolean))];const exchNames=exchIds.map(id=>getExchName(id)).join(', ')||'—';
+    const actStk=staking.filter(s=>s.divisaId===d.id&&(!s.fechaFinal||s.fechaFinal>=today()));
+    return`<div class="asset-card" style="${faded?'opacity:0.45':''}" onclick='showAssetDetail(${JSON.stringify({id:d.id,nombre:d.nombre,stock:d.stock})})'><div class="crypto-icon" style="background:${meta.c}22;color:${meta.c};font-size:${meta.e.length>1?'16':'22'}px">${meta.e}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">${d.nombre}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${exchNames} ${actStk.length?'<span class="badge badge-stake">STAKING</span>':''}</div></div><div style="text-align:right"><div style="font-family:\'JetBrains Mono\';font-size:13px;font-weight:700">${fmtStock(d.stock)}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">${myBuys.length} compras</div></div></div>`;
+  }
+  document.getElementById('portfolio-list').innerHTML=withStock.length?withStock.map(d=>buildCard(d)).join(''):'<div class="empty"><div class="icon">💼</div><h3>Sin activos con saldo</h3><p>Importa tu Excel o usa + para añadir divisas</p></div>';
+  document.getElementById('portfolio-zero').innerHTML=noStock.slice(0,25).map(d=>buildCard(d,true)).join('');
+}
+function showAssetDetail(d){
+  const compras=DB.compras().filter(c=>c.divisaId===d.id);const ventas=DB.ventas().filter(v=>v.divisaId===d.id);const stk=DB.staking().filter(s=>s.divisaId===d.id);
+  const totalInv=compras.reduce((s,c)=>s+(c.costeCompra||0),0);const totalRec=ventas.filter(v=>v.operacion==='VENTA'||!v.operacion).reduce((s,v)=>s+(v.totalOperacion||0),0);const totalGan=ventas.reduce((s,v)=>s+(v.ganancia||0),0);
+  const meta=cm(d.nombre);
+  showDetail(`${meta.e} ${d.nombre}`,[['Stock actual',fmtStock(d.stock),''],['Total compras',compras.length+' ops','color:var(--text2)'],['Total invertido',fmt(totalInv,2)+' €','color:var(--amber)'],['Total ventas',ventas.length+' ops','color:var(--text2)'],['Recuperado',fmt(totalRec,2)+' $',totalRec>0?'color:var(--green)':''],['Ganancia',(totalGan>=0?'+':'')+fmt(totalGan,2)+' $',totalGan>=0?'color:var(--green)':'color:var(--red)'],['Staking',stk.length+' registro(s)','color:var(--purple)']]);
+}
+let opsFilter='all';
+function setOpsFilter(f,el){opsFilter=f;document.querySelectorAll('#ops-filters .filter-chip').forEach(c=>c.classList.remove('active'));if(el)el.classList.add('active');renderOps();}
+function renderOps(){
+  const compras=DB.compras(),ventas=DB.ventas(),staking=DB.staking(),gastos=DB.gastos(),traspasos=DB.traspasos();
+  let allOps=[];const f=opsFilter;
+  if(f==='all'||f==='compra')compras.forEach(c=>allOps.push({tipo:'compra',id:c.id,fecha:c.fecha,divId:c.divisaId,title:getDivNombre(c.divisaId)||c.divisaId,sub:`${getExchName(c.exchangeId)} · ${c.cantidad>0?fmtStock(c.cantidad)+' uds':''}`,amount:c.costeCompra,moneda:c.monedaCosto||'€',sign:'-'}));
+  if(f==='all'||f==='venta')ventas.forEach(v=>allOps.push({tipo:v.operacion==='INTERCAMBIO'?'intercambio':'venta',id:v.id,fecha:v.fecha,divId:v.divisaId,title:getDivNombre(v.divisaId)||v.divisaId,sub:`${getExchName(v.exchangeId)} · ${v.operacion||'VENTA'}`,amount:v.totalOperacion,moneda:'$',sign:'+',ganancia:v.ganancia}));
+  if(f==='all'||f==='staking')staking.forEach(s=>allOps.push({tipo:'staking',id:s.id,fecha:s.fechaInicio,divId:s.divisaId,title:getDivNombre(s.divisaId)||s.divisaId,sub:`${getExchName(s.exchangeId)} · ${s.obs||'Staking'}`,amount:s.ganancias,moneda:'',sign:'+'}));
+  if(f==='all'||f==='gasto')gastos.forEach(g=>allOps.push({tipo:'gasto',id:g.id,fecha:g.fecha,divId:'',title:g.web||g.obs||'Ingreso Fiat',sub:`${g.web||''} ${g.obs?'· '+g.obs.substr(0,30):''}`,amount:g.euros,moneda:'€',sign:'-'}));
+  if(f==='all'||f==='traspaso')traspasos.forEach(t=>allOps.push({tipo:'traspaso',id:t.id,fecha:t.fecha,divId:t.divisaId,title:getDivNombre(t.divisaId)||t.divisaId,sub:`${getExchName(t.exchangeId)} → ${getExchName(t.altaExchange)}`,amount:t.cantidadEnviada,moneda:'€',sign:''}));
+  allOps.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  document.getElementById('ops-count').textContent=allOps.length;
+  if(!allOps.length){document.getElementById('ops-list').innerHTML='<div class="empty"><div class="icon">📋</div><h3>Sin operaciones</h3><p>Usa el botón + para añadir</p></div>';return;}
+  const byMonth={};allOps.forEach(op=>{const key=op.fecha?op.fecha.substr(0,7):'????-??';if(!byMonth[key])byMonth[key]=[];byMonth[key].push(op);});
+  const monthKeys=Object.keys(byMonth).sort((a,b)=>b.localeCompare(a));const firstKey=monthKeys[0];
+  const tcol={'compra':'var(--green)','venta':'var(--red)','intercambio':'var(--blue)','staking':'var(--purple)','gasto':'var(--amber)','traspaso':'var(--text3)'};
+  const tbadge={'compra':'badge-buy','venta':'badge-sell','intercambio':'badge-transfer','staking':'badge-stake','gasto':'badge-expense','traspaso':'badge-exchange'};
+  const tlabel={'compra':'COMPRA','venta':'VENTA','intercambio':'SWAP','staking':'STAKING','gasto':'FIAT IN','traspaso':'TRASPASO'};
+  const tdeltype={'compra':'compra','venta':'venta','intercambio':'venta','staking':'staking','gasto':'gasto','traspaso':'traspaso'};
+  let html='';
+  monthKeys.forEach(key=>{
+    const[y,m]=key.split('-');const label=`${MES_FULL[parseInt(m)]||key} ${y}`;const items=byMonth[key];const isOpen=key===firstKey;const mid='mg-'+key.replace('-','');
+    html+=`<div class="month-group"><div class="month-header" onclick="toggleMG('${mid}')"><div style="display:flex;align-items:center;gap:8px"><span class="month-name">${label}</span><span class="month-badge">${items.length}</span></div><span class="month-chev ${isOpen?'open':''}" id="chev-${mid}">▼</span></div><div class="month-body ${isOpen?'open':''}" id="${mid}">`;
+    items.forEach(op=>{
+      const color=tcol[op.tipo]||'var(--text2)';const badge=tbadge[op.tipo]||'badge-exchange';const label2=tlabel[op.tipo]||op.tipo.toUpperCase();const delType=tdeltype[op.tipo]||op.tipo;
+      const n=getDivNombre(op.divId)||op.title;const meta=cm(n);const amtStr=op.amount?`${op.sign}${fmt(op.amount,2)} ${op.moneda}`:'—';
+      const ganStr=op.ganancia!=null&&op.ganancia!==0?`<span style="font-size:10px;color:${op.ganancia>=0?'var(--green)':'var(--red)'}">${op.ganancia>=0?'▲':'▼'}${fmt(Math.abs(op.ganancia),2)}$</span>`:'';
+      html+=`<div class="op-item"><div class="op-dot" style="background:${color}"></div><div style="width:32px;height:32px;border-radius:10px;background:${meta.c}22;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${meta.e}</div><div class="op-body"><div class="op-title">${op.title}</div><div class="op-sub">${fmtDS(op.fecha)} · ${op.sub}</div></div><div style="text-align:right;flex-shrink:0"><div class="op-amount" style="color:${op.sign==='-'?'var(--red)':'var(--green)'}">${amtStr}</div><div style="margin-top:2px">${ganStr}<span class="badge ${badge}" style="margin-left:2px">${label2}</span></div></div><button class="btn-edit-sm" onclick="openEdit('${delType}','${op.id}')" title="Editar">✏️</button><button class="btn-del-sm" onclick="deleteRecord('${delType}','${op.id}')" title="Eliminar">🗑</button></div>`;
+    });
+    html+=`</div></div>`;
+  });
+  document.getElementById('ops-list').innerHTML=html;
+}
+function toggleMG(id){const b=document.getElementById(id),c=document.getElementById('chev-'+id);if(b){b.classList.toggle('open');if(c)c.classList.toggle('open');}}
+let charts={};
+function destroyCharts(){Object.values(charts).forEach(c=>{try{c.destroy();}catch{}});charts={};}
+function renderStats(){
+  destroyCharts();renderInvestAccordion();
+  const gastos=DB.gastos().filter(g=>g.fecha&&g.euros>0).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const ventas=DB.ventas().filter(v=>v.fecha&&v.ganancia!=null&&(v.operacion==='VENTA'||!v.operacion));
+  const divisas=DB.divisas();
+  const gc='rgba(255,255,255,0.05)',tc='#6B7280';
+  const bOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:gc},ticks:{color:tc,font:{family:'JetBrains Mono',size:10},maxTicksLimit:8}},y:{grid:{color:gc},ticks:{color:tc,font:{family:'JetBrains Mono',size:10}}}}};
+  let acum=0;const acumData=gastos.map(g=>{acum+=g.euros;return{x:g.fecha.substr(0,7),y:acum};});
+  if(acumData.length){charts.acum=new Chart(document.getElementById('chart-acum'),{type:'line',data:{datasets:[{data:acumData,borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,0.08)',borderWidth:2,pointRadius:2,fill:true,tension:0.4,label:'Invertido €'}]},options:{...bOpts,parsing:{xAxisKey:'x',yAxisKey:'y'},scales:{...bOpts.scales,y:{...bOpts.scales.y,ticks:{...bOpts.scales.y.ticks,callback:v=>v+'€'}}}}});}
+  const topV=ventas.slice(-20).map(v=>({label:getDivNombre(v.divisaId).substr(0,8),val:v.ganancia}));
+  if(topV.length){charts.pnl=new Chart(document.getElementById('chart-pnl'),{type:'bar',data:{labels:topV.map(v=>v.label),datasets:[{data:topV.map(v=>v.val),backgroundColor:topV.map(v=>v.val>=0?'rgba(16,185,129,0.7)':'rgba(239,68,68,0.7)'),borderRadius:4}]},options:{...bOpts,scales:{...bOpts.scales,y:{...bOpts.scales.y,ticks:{...bOpts.scales.y.ticks,callback:v=>v+'$'}}}}});}
+  const withStock=divisas.filter(d=>d.stock>0);
+  const colors=['#F59E0B','#10B981','#3B82F6','#8B5CF6','#EF4444','#EC4899','#14B8A6','#F97316','#06B6D4','#84CC16'];
+  if(withStock.length){charts.port=new Chart(document.getElementById('chart-portfolio'),{type:'doughnut',data:{labels:withStock.map(d=>d.nombre),datasets:[{data:withStock.map(()=>1),backgroundColor:withStock.map((d,i)=>cm(d.nombre).c||colors[i%colors.length]),borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:true,position:'right',labels:{color:tc,font:{family:'Syne',size:11},padding:8,boxWidth:12}}}}});}
+  const ec={};DB.compras().forEach(c=>{if(c.exchangeId){const n=getExchName(c.exchangeId);ec[n]=(ec[n]||0)+1;}});
+  const topE=Object.entries(ec).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if(topE.length){charts.exch=new Chart(document.getElementById('chart-exchange'),{type:'doughnut',data:{labels:topE.map(e=>e[0]),datasets:[{data:topE.map(e=>e[1]),backgroundColor:colors,borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:true,position:'right',labels:{color:tc,font:{family:'Syne',size:11},padding:8,boxWidth:12}}}}});}
+}
+function renderInvestAccordion(){
+  const gastos=DB.gastos().filter(g=>g.fecha&&g.euros>0);
+  if(!gastos.length){document.getElementById('invest-accordion').innerHTML='<div style="padding:16px;color:var(--text2);font-size:13px;text-align:center">Sin datos de inversión fiat</div>';return;}
+  const byYear={};gastos.forEach(g=>{const[y,m]=g.fecha.split('-');if(!byYear[y])byYear[y]={};byYear[y][m]=(byYear[y][m]||0)+g.euros;});
+  const years=Object.keys(byYear).sort((a,b)=>b-a);const maxT=Math.max(...years.map(y=>Object.values(byYear[y]).reduce((s,v)=>s+v,0)));const curY=new Date().getFullYear().toString();
+  const html=years.map(y=>{
+    const total=Object.values(byYear[y]).reduce((s,v)=>s+v,0);const pct=Math.round(total/maxT*100);const aid='ia-'+y;
+    const monthsHtml=Object.keys(byYear[y]).sort().map(m=>{const v=byYear[y][m];const mp=Math.round(v/total*100);return`<div class="acc-row"><div class="acc-row-label">${MES[parseInt(m)]}</div><div class="acc-bar-wrap"><div class="acc-bar-bg"><div class="acc-bar-fill" style="width:${mp}%;background:var(--amber)"></div></div></div><div class="acc-row-val" style="color:var(--amber)">${fmt(v,0)} €</div></div>`;}).join('');
+    return`<div class="acc-year"><div class="acc-year-header" onclick="toggleAcc('${aid}')"><div style="display:flex;align-items:center;gap:10px"><span class="acc-year-label">${y}</span><span class="acc-year-badge" style="background:var(--amber-dim);color:var(--amber)">${fmt(total,0)} €</span></div><div style="display:flex;align-items:center;gap:10px"><div style="width:80px;height:4px;background:var(--card2);border-radius:2px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--amber);border-radius:2px"></div></div><span class="acc-chevron" id="chev-${aid}">▼</span></div></div><div class="acc-body" id="${aid}">${monthsHtml}</div></div>`;
+  }).join('');
+  document.getElementById('invest-accordion').innerHTML=html;
+  if(byYear[curY])toggleAcc('ia-'+curY);
+}
+function toggleAcc(id){const e=document.getElementById(id),c=document.getElementById('chev-'+id);if(e){e.classList.toggle('open');if(c)c.classList.toggle('open');}}
+function importExcel(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true,cellNF:true});
+      const toRows=name=>{const sn=wb.SheetNames.find(s=>s.toLowerCase().trim()===name.toLowerCase().trim());if(!sn)return[];return XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:'',raw:true});};
+      const compras=toRows('Compra').filter(r=>hdr(r,'ID COMPRA','ID compra')&&String(hdr(r,'ID COMPRA','ID compra')).trim()).map(r=>({id:String(hdr(r,'ID COMPRA','ID compra')||'').trim(),fecha:parseExcelDate(hdr(r,'FECHA','Fecha')),divisaId:String(hdr(r,'DIVISA','Divisa')||'').trim(),precioUnidad:parseCur(hdr(r,'Precio Unidad','PRECIO UNIDAD')),moneda:String(hdr(r,'Moneda','MONEDA')||'').trim(),cantidad:parseNum(hdr(r,'CANTIDAD','Cantidad')),comisiones:parseCur(hdr(r,'Comisiones','COMISIONES')),costeCompra:parseCur(hdr(r,'COSTE COMPRA','Coste compra')),monedaCosto:String(hdr(r,'Moneda €$','MONEDA €$')||'').trim(),webCompra:String(hdr(r,'WEB COMPRA','Web compra')||'').trim(),exchangeId:String(hdr(r,'EXCHANGE','Exchange')||'').trim(),obs:String(hdr(r,'OBSERVACIONES','Observaciones')||'').trim()}));
+      const ventas=toRows('Venta').filter(r=>hdr(r,'ID Venta','ID VENTA')&&String(hdr(r,'ID Venta','ID VENTA')).trim()).map(r=>({id:String(hdr(r,'ID Venta','ID VENTA')||'').trim(),exchangeId:String(hdr(r,'ID KEY EXCHANGE','Id key exchange')||'').trim(),fecha:parseExcelDate(hdr(r,'FECHA','Fecha')),divisaId:String(hdr(r,'Divisa','DIVISA')||'').trim(),precioUCompra:parseCur(hdr(r,'Precio U. Compra','PRECIO U. COMPRA')),precioUVenta:parseCur(hdr(r,'Precio Unidad venta','PRECIO UNIDAD VENTA')),cantidad:parseNum(hdr(r,'Cantidad','CANTIDAD')),comisiones:parseCur(hdr(r,'Comisiones','COMISIONES')),operacion:String(hdr(r,'OPERACIÓN','Operacion','OPERACION')||'').trim(),totalOperacion:parseCur(hdr(r,'Total Operación','TOTAL OPERACION')),ganancia:parseCur(hdr(r,'Gana','ganancia','GANANCIA','Ganancia'))}));
+      const exchanges=toRows('Exchange').filter(r=>hdr(r,'ID EXCHANGE','Id exchange')&&String(hdr(r,'ID EXCHANGE','Id exchange')).trim()).map(r=>({id:String(hdr(r,'ID EXCHANGE','Id exchange')||'').trim(),nombre:String(hdr(r,'NOMBRE EXCHANGE','Nombre exchange')||'').trim(),divisas:String(hdr(r,'DIVISA','Divisa')||'').trim(),obs:String(hdr(r,'OBSERVACIONES','Observaciones')||'').trim()}));
+      const divisas=toRows('DIVISA').filter(r=>hdr(r,'ID DIVISA','Id divisa')&&String(hdr(r,'ID DIVISA','Id divisa')).trim()).map(r=>({id:String(hdr(r,'ID DIVISA','Id divisa')||'').trim(),nombre:String(hdr(r,'DIVISA','Divisa')||'').trim(),ref:String(hdr(r,'REF NOMBRE DIVISA','Ref nombre divisa')||'').trim(),stock:parseNum(hdr(r,'Stock','STOCK'))}));
+      const staking=toRows('Staking').filter(r=>hdr(r,'Id staking','ID STAKING')&&String(hdr(r,'Id staking','ID STAKING')).trim()).map(r=>({id:String(hdr(r,'Id staking','ID STAKING')||'').trim(),divisaId:String(hdr(r,'Divisa','DIVISA')||'').trim(),exchangeId:String(hdr(r,'Exchange','EXCHANGE')||'').trim(),cantidad:parseNum(hdr(r,'Cantidad','CANTIDAD')),fechaInicio:parseExcelDate(hdr(r,'Fecha Inicio','FECHA INICIO')),fechaFinal:parseExcelDate(hdr(r,'Fecha Final','FECHA FINAL')),ganancias:parseNum(hdr(r,'Ganancias Acumuladas','GANANCIAS ACUMULADAS')),obs:String(hdr(r,'Observaciones','OBSERVACIONES')||'').trim(),sumaTotal:parseNum(hdr(r,'Suma total','SUMA TOTAL')),activo:String(hdr(r,'ACTIVO','Activo')||'').trim()}));
+      const traspasos=toRows('Traspasos de exchange').filter(r=>hdr(r,'ID Traspasos','ID TRASPASOS')&&String(hdr(r,'ID Traspasos','ID TRASPASOS')).trim()).map(r=>({id:String(hdr(r,'ID Traspasos','ID TRASPASOS')||'').trim(),divisaId:String(hdr(r,'Divisa','DIVISA')||'').trim(),exchangeId:String(hdr(r,'Exchange','EXCHANGE')||'').trim(),fecha:parseExcelDate(hdr(r,'Fecha','FECHA')),cantidadEnviada:parseCur(hdr(r,'Cantidad enviada','CANTIDAD ENVIADA')),comisiones:parseCur(hdr(r,'Comisiones','COMISIONES')),cantidadRecibida:parseCur(hdr(r,'C. Recibida','C. recibida')),altaExchange:String(hdr(r,'Alta Exchange','Alta exchange')||'').trim(),obs:String(hdr(r,'observaciones','Observaciones','OBSERVACIONES')||'').trim()}));
+      const gastos=toRows('Gastos Euros').filter(r=>{const eu=hdr(r,'Euros','EUROS');return eu&&parseCur(eu)>0;}).map(r=>({id:String(hdr(r,'ID EUROS','Id euros')||uid()).trim(),euros:parseCur(hdr(r,'Euros','EUROS')),usdt:parseCur(hdr(r,'USDT','Usdt')),web:String(hdr(r,'WEB','Web')||'').trim(),fecha:parseExcelDate(hdr(r,'FECHA','Fecha')),obs:String(hdr(r,'Observaciones','OBSERVACIONES')||'').trim()}));
+      DB.set('compras',compras);DB.set('ventas',ventas);DB.set('exchanges',exchanges);DB.set('divisas',divisas);DB.set('staking',staking);DB.set('traspasos',traspasos);DB.set('gastos',gastos);
+      renderAll();toast(`✅ ${compras.length} compras · ${ventas.length} ventas · ${divisas.length} activos importados`);
+    }catch(err){console.error(err);toast('❌ Error: '+err.message);}
+    input.value='';
+  };
+  reader.readAsArrayBuffer(file);
+}
+function exportJSON(){
+  const data={compras:DB.compras(),ventas:DB.ventas(),exchanges:DB.exchanges(),divisas:DB.divisas(),staking:DB.staking(),traspasos:DB.traspasos(),gastos:DB.gastos(),exportedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='becils-backup.json';a.click();
+  toast('✅ Backup exportado');
+}
+function importJSON(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{try{const d=JSON.parse(e.target.result);['compras','ventas','exchanges','divisas','staking','traspasos','gastos'].forEach(k=>{if(d[k])DB.set(k,d[k]);});renderAll();toast('✅ Backup restaurado');}catch{toast('❌ JSON inválido');}input.value='';};
+  reader.readAsText(file);
+}
+function clearAll(){if(!confirm('¿Borrar todos los datos? Acción irreversible.'))return;['compras','ventas','exchanges','divisas','staking','traspasos','gastos'].forEach(k=>localStorage.removeItem('bc_'+k));renderAll();toast('🗑 Datos borrados');}
+function renderAll(){
+  const c=DB.compras(),v=DB.ventas(),d=DB.divisas(),s=DB.staking(),g=DB.gastos();
+  document.getElementById('topbar-counts').textContent=`${c.length}C · ${v.length}V · ${d.length} activos`;
+  document.getElementById('db-stats').textContent=`${c.length} compras · ${v.length} ventas · ${d.length} divisas · ${s.length} staking · ${g.length} gastos`;
+  if(curSec==='home')renderHome();if(curSec==='portfolio')renderPortfolio();if(curSec==='ops')renderOps();if(curSec==='stats')renderStats();
+}
+function init(){
+  document.getElementById('topbar-date').textContent=new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
+  document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)bg.classList.remove('open');}));
+  renderHome();renderAll();
+}
+// PWA manifest dinámico
+const manifest={name:'BECILS Crypto',short_name:'Becils',description:'Tracker de portfolio cripto',start_url:'.',display:'standalone',background_color:'#07090F',theme_color:'#F59E0B',icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23F59E0B'/%3E%3Ctext y='.9em' font-size='80' x='10'%3E₿%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'}]};
+const mblob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+const mlink=document.createElement('link');mlink.rel='manifest';mlink.href=URL.createObjectURL(mblob);
+document.head.appendChild(mlink);
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
